@@ -2,7 +2,7 @@ volcanic: Automated Generator of Volcano Plots
 ==============================================
 [![DOI](https://zenodo.org/badge/381737392.svg)](https://zenodo.org/badge/latestdoi/381737392)
 
-![volcanic logo](./images/volcanic_logo.png)
+![marc logo](./images/marc_logo.png)
 
 ## Contents
 * [About](#about-)
