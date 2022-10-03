@@ -8,7 +8,7 @@ from itertools import cycle
 import numpy as np
 import pandas as pd
 
-from volcanic.exceptions import InputError
+from marc.exceptions import InputError
 
 
 def yesno(question):
@@ -50,56 +50,12 @@ def group_data_points(bc, ec, names):
     return cb, ms
 
 
-def user_choose_1_dv(dvs, r2s, tags):
-    for dv, r2 in zip(dvs, r2s):
-        print(
-            f"\n{tags[dv]} has been identified as a suitable descriptor variable with r2={np.round(r2,4)}."
-        )
-        ok = yesno("Continue using this variable")
-        if ok:
-            return dv
-    if not ok:
-        manual = yesno("Would you want to use some other descriptor variable instead")
-        if manual:
-            for i, tag in enumerate(tags):
-                ok = yesno(f"Use {tag} as descriptor")
-                if ok:
-                    return i
-    return None
-
-
-def user_choose_2_dv(ddvs, r2s, tags):
-    tags = np.array(tags[1:], dtype=np.str)
-    ptags = []
-    for pair in itertools.combinations(tags, r=2):
-        ptags.append([pair[0], pair[1]])
-    for dv, r2 in zip(ddvs, r2s):
-        print(
-            f"\nThe combination of {tags[dv[0]]} and {tags[dv[1]]} has been identified as a suitable combined descriptor variable with r2={np.round(r2,4)}."
-        )
-        ok = yesno("Continue using this combined descriptor variable")
-        if ok:
-            return (dv[0] + 1, dv[1] + 1)
-    if not ok:
-        manual = yesno(
-            "Would you want to use some other descriptor variable combination instead"
-        )
-        if manual:
-            for i, ptag in enumerate(ptags):
-                ok = yesno(f"Use combination of {ptag[0]} and {ptag[1]} as descriptor")
-                if ok:
-                    idx1 = np.where(tags == np.str(ptag[0]))[0][0] + 1
-                    idx2 = np.where(tags == np.str(ptag[1]))[0][0] + 1
-                    return idx1, idx2
-    return None, None
-
-
 def processargs(arguments):
 
     vbuilder = argparse.ArgumentParser(
-        prog="volcanic",
+        prog="marc",
         description="Build volcano plots from reaction energy profile data.",
-        epilog="Remember to cite the volcanic paper: \n \nLaplaza, R., Das, S., Wodrich, M.D. et al. Constructing and interpreting volcano plots and activity maps to navigate homogeneous catalyst landscapes. Nat Protoc (2022). \nhttps://doi.org/10.1038/s41596-022-00726-2 \n \n - and enjoy!",
+        epilog="Remember to cite the marc paper: \n \nLaplaza, R., Das, S., Wodrich, M.D. et al. Constructing and interpreting volcano plots and activity maps to navigate homogeneous catalyst landscapes. Nat Protoc (2022). \nhttps://doi.org/10.1038/s41596-022-00726-2 \n \n - and enjoy!",
     )
     vbuilder.add_argument(
         "-version", "--version", action="version", version="%(prog)s 1.1"
@@ -451,20 +407,3 @@ def setflags(runmode):
     return t_volcano, k_volcano, es_volcano, tof_volcano
 
 
-def test_filedump():
-    dv = np.linspace(0, 50, 1000)
-    tv = np.linspace(-34, 13, 1000)
-    kv = np.linspace(15, 25, 1000)
-    volcano_list = [tv, kv]
-    volcano_headers = ["Thermodynamic volcano", "Kinetic volcano"]
-    arraydump("hdf5_test.hdf5", dv, volcano_list, volcano_headers)
-    dv, volcano_list, volcano_headers = arrayread("hdf5_test.hdf5")
-    assert np.allclose(
-        tv, volcano_list[volcano_headers.index("Thermodynamic volcano")], 4
-    )
-    assert np.allclose(kv, volcano_list[volcano_headers.index("Kinetic volcano")], 4)
-    os.remove("hdf5_test.hdf5")
-
-
-if __name__ == "__main__":
-    test_filedump()

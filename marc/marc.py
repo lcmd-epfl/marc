@@ -9,14 +9,30 @@ import numpy as np
 from .dv1 import curate_d, find_1_dv
 from .dv2 import find_2_dv
 from .exceptions import InputError
-from .helpers import (arraydump, group_data_points, processargs, setflags,
-                      user_choose_1_dv, user_choose_2_dv)
-from .plotting2d import (plot_2d_es_volcano, plot_2d_k_volcano, plot_2d_lsfer,
-                         plot_2d_t_volcano, plot_2d_tof_volcano)
-from .plotting3d import (plot_3d_es_volcano, plot_3d_k_volcano, plot_3d_lsfer,
-                         plot_3d_t_volcano, plot_3d_tof_volcano)
+from .helpers import (
+    arraydump,
+    group_data_points,
+    processargs,
+    setflags,
+    user_choose_1_dv,
+    user_choose_2_dv,
+)
+from .plotting2d import (
+    plot_2d_es_volcano,
+    plot_2d_k_volcano,
+    plot_2d_lsfer,
+    plot_2d_t_volcano,
+    plot_2d_tof_volcano,
+)
+from .plotting3d import (
+    plot_3d_es_volcano,
+    plot_3d_k_volcano,
+    plot_3d_lsfer,
+    plot_3d_t_volcano,
+    plot_3d_tof_volcano,
+)
 
-if __name__ == "__main__" or __name__ == "volcanic.volcanic":
+if __name__ == "__main__" or __name__ == "marc.marc":
     (
         df,
         nd,
@@ -39,7 +55,7 @@ else:
 # Fill in reaction profile names/IDs from input data.
 if verb > 0:
     print(
-        f"volcanic will assume that {df.columns[0]} contains names/IDs of reaction profiles."
+        f"marc will assume that {df.columns[0]} contains names/IDs of reaction profiles."
     )
 names = df[df.columns[0]].values
 
@@ -94,7 +110,7 @@ d, cb, ms = curate_d(d, regress, cb, ms, tags, imputer_strat, nstds=3, verb=verb
 t_volcano, k_volcano, es_volcano, tof_volcano = setflags(runmode)
 
 if nd == 1:
-    # volcanic will find best non-TS descriptor variable
+    # marc will find best non-TS descriptor variable
     dvs, r2s = find_1_dv(d, tags, coeff, regress, verb)
     idx = user_choose_1_dv(dvs, r2s, tags)
     if idx is not None:
@@ -227,7 +243,7 @@ if nd == 1:
             arraydump("2d_volcanos.hdf5", xint, volcano_list, volcano_headers)
 
 if nd == 2:
-    # volcanic will find best non-TS combination of two descriptor variables
+    # marc will find best non-TS combination of two descriptor variables
     dvs, r2s = find_2_dv(d, tags, coeff, regress, verb)
     idx1, idx2 = user_choose_2_dv(dvs, r2s, tags)
     if idx1 is not None and idx2 is not None:
@@ -374,7 +390,7 @@ if nd == 2:
             )
 
 
-def volcanic_2d(
+def marc_2d(
     runmode,
     idx,
     d,
@@ -466,7 +482,7 @@ def volcanic_2d(
         )
 
 
-def volcanic_3d(
+def marc_3d(
     runmode,
     idx1,
     idx2,

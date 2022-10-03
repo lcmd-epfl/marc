@@ -5,5 +5,3 @@ class InputError(Exception):
     """Raised when there is an error in the input."""
 
     pass
-
-
