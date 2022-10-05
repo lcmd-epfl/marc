@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import numpy as np
 import networkx as nx
+import numpy as np
 
 
 def da_matrix(mols):

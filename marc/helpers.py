@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import itertools
-import os
+import glob
 from itertools import cycle
 
 import numpy as np
-import pandas as pd
 
 from marc.exceptions import InputError
+from marc.molecule import Molecule
 
 
 def yesno(question):
@@ -33,6 +32,10 @@ def bround(x, base: float = 10, type=None) -> float:
         return tick
 
 
+def chunker(seq, size):
+    return (seq[pos : pos + size] for pos in range(0, len(seq), size))
+
+
 def group_data_points(bc, ec, names):
     try:
         groups = np.array([str(i)[bc:ec].upper() for i in names], dtype=object)
@@ -50,127 +53,82 @@ def group_data_points(bc, ec, names):
     return cb, ms
 
 
+def molecules_from_file(filename):
+    molecules = []
+    f = open(filename, "r")
+    n_atoms = 0
+
+    lines = list(f.readlines())
+    f.close()
+    try:
+        n_atoms = int(lines[0].strip())
+    except ValueError:
+        raise InputError(
+            f"Could not obtain the number of atoms in the .xyz file {filename} from first line. Check format."
+        )
+
+    if len(lines) % (n_atoms + 2) != 0:
+        raise InputError(
+            f"Could not parse trajectory xyz file {filename} properly. Check format."
+        )
+    for chunk in chunker(lines, n_atoms + 2):
+        molecule = Molecule(lines=chunk)
+        molecules.append(molecule)
+    return molecules
+
+
 def processargs(arguments):
 
-    vbuilder = argparse.ArgumentParser(
+    mbuilder = argparse.ArgumentParser(
         prog="marc",
-        description="Build volcano plots from reaction energy profile data.",
-        epilog="Remember to cite the marc paper: \n \nLaplaza, R., Das, S., Wodrich, M.D. et al. Constructing and interpreting volcano plots and activity maps to navigate homogeneous catalyst landscapes. Nat Protoc (2022). \nhttps://doi.org/10.1038/s41596-022-00726-2 \n \n - and enjoy!",
+        description="Analyse conformer ensembles to find the most representative structures.",
+        epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
-    vbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 1.1"
+    mbuilder.add_argument(
+        "-version", "--version", action="version", version="%(prog)s 1.0"
     )
-    runmode_arg = vbuilder.add_mutually_exclusive_group()
-    vbuilder.add_argument(
+    runmode_arg = mbuilder.add_mutually_exclusive_group()
+    mbuilder.add_argument(
         "-i",
         "--i",
         "-input",
-        dest="filenames",
+        dest="input",
         nargs="?",
         action="append",
         type=str,
         required=True,
-        help="Filename containing reaction energy data. See documentation for input and file formatting questions.",
+        help="Filename(s) containing the conformational ensemble as an xyz trajectory, or separately as xyz files.",
     )
-    vbuilder.add_argument(
-        "-df",
-        "--df",
-        "-i2",
-        "--i2",
-        dest="dfilenames",
-        action="append",
+    mbuilder.add_argument(
+        "-c",
+        "--c",
+        "-cluster",
+        "--cluster",
+        dest="c",
         type=str,
-        default=[],
-        help="Filename containing non-energy descriptors matching the reaction profiles. See documentation for input and file formatting questions.",
+        default="kmeans",
+        help="Clustering algorithms to use. (default: kmeans)",
     )
-    vbuilder.add_argument(
-        "-nd",
-        "--nd",
-        dest="nd",
-        type=int,
-        default=1,
-        help="Number of descriptor variables to use. (default: 1)",
+    mbuilder.add_argument(
+        "-m",
+        "--m",
+        "-metric",
+        "--metric",
+        dest="m",
+        type=str,
+        default="ewrmsd",
+        help="Metric to use to define distance. (default: ewrmsd)",
     )
-    vbuilder.add_argument(
+    mbuilder.add_argument(
         "-v",
         "--v",
         "--verb",
         dest="verb",
         type=int,
         default=0,
-        help="Verbosity level of the code. Higher is more verbose and viceversa. Set to at least 2 to generate csv output files (default: 1)",
+        help="Verbosity level of the code. Higher is more verbose and viceversa. (default: 1)",
     )
-    vbuilder.add_argument(
-        "-r",
-        "--r",
-        dest="runmode",
-        type=int,
-        default=6,
-        help="Defines the volcano plots to build.\n 0: LSRs\n 1: Thermodynamic\n 2: Kinetic\n 3: Energy Span\n 4: TOF\n 5: All of the above\n Other: Ask through CLI (default)",
-    )
-    runmode_arg.add_argument(
-        "-lsfer",
-        "--lsfer",
-        "-lsr",
-        "--lsr",
-        dest="runmode",
-        action="store_const",
-        const=0,
-        help="Set runmode to 0, building only linear scaling relationships.",
-    )
-    runmode_arg.add_argument(
-        "-thermo",
-        "--thermo",
-        dest="runmode",
-        action="store_const",
-        const=1,
-        help="Set runmode to 1, building only thermodynamic volcano.",
-    )
-    runmode_arg.add_argument(
-        "-kinetic",
-        "--kinetic",
-        dest="runmode",
-        action="store_const",
-        const=2,
-        help="Set runmode to 2, building only kinetic volcano.",
-    )
-    runmode_arg.add_argument(
-        "-es",
-        "--es",
-        dest="runmode",
-        action="store_const",
-        const=3,
-        help="Set runmode to 3, building only energy span volcano.",
-    )
-    runmode_arg.add_argument(
-        "-tof",
-        "--tof",
-        dest="runmode",
-        action="store_const",
-        const=4,
-        help="Set runmode to 4, building only TOF volcano.",
-    )
-    runmode_arg.add_argument(
-        "-all",
-        "--all",
-        dest="runmode",
-        action="store_const",
-        const=5,
-        help="Set runmode to 5, building all available volcanoes.",
-    )
-    vbuilder.add_argument(
-        "-T",
-        "-t",
-        "--T",
-        "--t",
-        "--temp",
-        "-temp",
-        dest="temp",
-        type=float,
-        default=298.15,
-        help="Temperature in K. (default: 298.15)",
-    )
-    vbuilder.add_argument(
+    mbuilder.add_argument(
         "-pm",
         "--pm",
         "-plotmode",
@@ -178,232 +136,35 @@ def processargs(arguments):
         dest="plotmode",
         type=int,
         default=1,
-        help="Plot mode for volcano and activity map plotting. Higher is more detailed, lower is basic. (default: 1)",
+        help="Plotting mode. Higher is more detailed, lower is more basic. (default: 1)",
     )
-    vbuilder.add_argument(
-        "-ic",
-        "--ic",
-        dest="ic",
-        type=int,
-        default=0,
-        help="Initial character for grouping based on name for visualization. (default: 0)",
-    )
-    vbuilder.add_argument(
-        "-fc",
-        "--fc",
-        dest="fc",
-        type=int,
-        default=2,
-        help="Final character for grouping based on name for visualization. (default: 2)",
-    )
-    vbuilder.add_argument(
-        "-rm",
-        "--rm",
-        dest="rmargin",
-        type=int,
-        default=10,
-        help="Right margin to pad for visualization, in descriptor variable units. (default: 20)",
-    )
-    vbuilder.add_argument(
-        "-lm",
-        "--lm",
-        dest="lmargin",
-        type=int,
-        default=10,
-        help="Left margin to pad for visualization, in descriptor variable units. (default: 20)",
-    )
-    vbuilder.add_argument(
-        "-np",
-        "--np",
-        dest="npoints",
-        type=int,
-        default=200,
-        help="Number of grid points to use for visualization. (default: 200)",
-    )
-    vbuilder.add_argument(
-        "-d",
-        "--d",
-        "-dump",
-        "--dump",
-        dest="dump",
-        action="store_true",
-        help="Flag to activate h5py dumping of data. (default: False)",
-    )
-    vbuilder.add_argument(
-        "-is",
-        "--is",
-        dest="imputer_strat",
-        type=str,
-        default="none",
-        help="Imputter to refill missing datapoints. Beta version. (default: None)",
-    )
-    vbuilder.add_argument(
-        "-refill",
-        "--refill",
-        dest="refill",
-        action="store_true",
-        help="Refill missing values using LSRs. Beta version. (default: False)",
-    )
-    args = vbuilder.parse_args(arguments)
+    args = mbuilder.parse_args(arguments)
 
-    dfs, ddfs = check_input(
-        args.filenames,
-        args.dfilenames,
-        args.temp,
-        args.nd,
-        args.imputer_strat,
-        args.verb,
-    )
-    if len(dfs) > 1:
-        df = pd.concat(dfs)
-    elif len(dfs) == 0:
-        raise InputError("No input profiles detected in file. Exiting.")
+    if len(input) > 1:
+        filenames = input
+        terminations = [i[-4:] for i in filenames]
+        if not all(terminations == ".xyz"):
+            raise InputError("File without xyz termination fed as input. Exiting.")
+        molecules = [Molecule(filename=i) for i in filenames]
+
+    elif len(input) == 0:
+        filenames = glob.glob("./*.xyz")
+        terminations = [i[-4:] for i in filenames]
+        if not all(terminations == ".xyz"):
+            raise InputError("File without xyz termination fed as input. Exiting.")
+        molecules = [Molecule(filename=i) for i in filenames]
+
     else:
-        df = dfs[0]
-    assert isinstance(df, pd.DataFrame)
-    if args.verb > 1:
-        print("Final reaction profile database (10 top rows):")
-        print(df.head(10))
-
-    if ddfs:
-        if len(ddfs) > 1:
-            ddf = pd.concat(ddfs)
-        elif len(dfs) == 0:
-            raise InputError("No valid descriptor files were provided. Exiting.")
+        termination = input[-4:]
+        if termination == ".xyz":
+            molecules = molecules_from_file(input)
         else:
-            ddf = ddfs[0]
-        assert isinstance(ddf, pd.DataFrame)
-        if not (df.shape[0] == ddf.shape[0]):
-            raise InputError(
-                "Different number of entries in reaction profile input file and descriptor file. Exiting."
-            )
-        if args.verb > 1:
-            print("Final descriptor database (top rows):")
-            print(ddf.head())
-        for column in ddf:
-            df.insert(1, f"Descriptor {column}", ddf[column].values)
+            raise InputError("File without xyz termination fed as input. Exiting.")
+
     return (
-        df,
-        args.nd,
-        args.verb,
-        args.runmode,
-        args.temp,
-        args.imputer_strat,
-        args.refill,
-        args.dump,
-        args.ic,
-        args.fc,
-        args.lmargin,
-        args.rmargin,
-        args.npoints,
+        molecules,
+        args.c,
+        args.m,
         args.plotmode,
+        args.verb,
     )
-
-
-def check_input(filenames, dfilenames, temp, nd, imputer_strat, verb):
-    accepted_excel_terms = ["xls", "xlsx"]
-    accepted_imputer_strats = ["simple", "knn", "iterative", "none"]
-    accepted_nds = [1, 2]
-    dfs = []
-    ddfs = []
-    for filename in filenames:
-        if filename.split(".")[-1] in accepted_excel_terms:
-            dfs.append(pd.read_excel(filename))
-        elif filename.split(".")[-1] == "csv":
-            dfs.append(pd.read_csv(filename))
-        else:
-            raise InputError(
-                f"File termination for filename {filename} was not understood. Try csv or one of {accepted_excel_terms}."
-            )
-    for dfilename in dfilenames:
-        if dfilename.split(".")[-1] in accepted_excel_terms:
-            dfs.append(pd.read_excel(dfilename))
-        elif dfilename.split(".")[-1] == "csv":
-            dfs.append(pd.read_csv(dfilename))
-        else:
-            raise InputError(
-                f"File termination for filename {dfilename} was not understood. Try csv or one of {accepted_excel_terms}."
-            )
-    if not isinstance(temp, float):
-        raise InputError("Invalid temperature input! Should be a float. Exiting.")
-    if imputer_strat not in accepted_imputer_strats:
-        raise InputError(
-            f"Invalid imputer strat in input!\n Accepted values are:\n {accepted_imputer_strats}"
-        )
-    if not isinstance(verb, int):
-        raise InputError("Invalid verbosity input! Should be a positive integer or 0.")
-    if nd not in accepted_nds:
-        raise InputError(
-            f"Invalid number of descriptors in input!\n Accepted values ar:\n {nd}"
-        )
-    return dfs, ddfs
-
-
-def arraydump(path: str, descriptor: np.array, volcano_list, volcano_headers):
-    """Dump array as an hdf5 file."""
-    import h5py
-
-    h5 = h5py.File(path, "w")
-    assert len(volcano_list) == len(volcano_headers)
-    # hdf5 file is like a dictionary, every dataset has a key and a data value (which can be an array)
-    h5.create_dataset("Descriptor", data=descriptor)
-    for i, j in zip(volcano_list, volcano_headers):
-        h5.create_dataset(j, data=i)
-    h5.close()
-
-
-def arrayread(path: str):
-    """Read hdf5 dataset."""
-    import h5py
-
-    h5 = h5py.File(path, "r")
-    volcano_headers = []
-    volcano_list = []
-    for key in h5.keys():
-        if key == "Descriptor":
-            descriptor = h5[key]
-        else:
-            volcano_headers.append(key)
-            volcano_list.append(h5[key][()])
-    return descriptor, volcano_list, volcano_headers
-
-
-def setflags(runmode):
-    if runmode == 0:
-        t_volcano = False
-        k_volcano = False
-        es_volcano = False
-        tof_volcano = False
-    elif runmode == 1:
-        t_volcano = True
-        k_volcano = False
-        es_volcano = False
-        tof_volcano = False
-    elif runmode == 2:
-        t_volcano = False
-        k_volcano = True
-        es_volcano = False
-        tof_volcano = False
-    elif runmode == 3:
-        t_volcano = False
-        k_volcano = False
-        es_volcano = True
-        tof_volcano = False
-    elif runmode == 4:
-        t_volcano = False
-        k_volcano = False
-        es_volcano = False
-        tof_volcano = True
-    elif runmode == 5:
-        t_volcano = True
-        k_volcano = True
-        es_volcano = True
-        tof_volcano = True
-    else:
-        t_volcano = yesno("Generate thermodynamic volcano plot")
-        k_volcano = yesno("Generate kinetic volcano plot")
-        es_volcano = yesno("Generate energy span volcano plot")
-        tof_volcano = yesno("Generate TOF volcano plot")
-    return t_volcano, k_volcano, es_volcano, tof_volcano
-
-
