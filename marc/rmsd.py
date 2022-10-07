@@ -19,7 +19,7 @@ def rmsd_matrix(mols):
     coords = np.array([mol.coordinates for mol in mols])
     n = len(mols)
     M = np.zeros((n, n))
-    for i, _ in range(n):
+    for i in range(n):
         for j in range(i, n - 1):
             M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j])
     return M

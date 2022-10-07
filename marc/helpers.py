@@ -4,6 +4,7 @@ import argparse
 import glob
 from itertools import cycle
 
+import networkx as nx
 import numpy as np
 
 from marc.exceptions import InputError
@@ -53,7 +54,7 @@ def group_data_points(bc, ec, names):
     return cb, ms
 
 
-def molecules_from_file(filename):
+def molecules_from_file(filename, noh=True):
     molecules = []
     f = open(filename, "r")
     n_atoms = 0
@@ -72,7 +73,7 @@ def molecules_from_file(filename):
             f"Could not parse trajectory xyz file {filename} properly. Check format."
         )
     for chunk in chunker(lines, n_atoms + 2):
-        molecule = Molecule(lines=chunk)
+        molecule = Molecule(lines=chunk, noh=noh)
         molecules.append(molecule)
     return molecules
 
@@ -140,26 +141,38 @@ def processargs(arguments):
     )
     args = mbuilder.parse_args(arguments)
 
-    if len(input) > 1:
-        filenames = input
-        terminations = [i[-4:] for i in filenames]
-        if not all(terminations == ".xyz"):
-            raise InputError("File without xyz termination fed as input. Exiting.")
+    if len(args.input) > 1:
+        filenames = args.input
+        terminations = [i[-3:] for i in filenames]
+        if not all(terminations == "xyz"):
+            raise InputError(
+                f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
+            )
         molecules = [Molecule(filename=i) for i in filenames]
 
-    elif len(input) == 0:
+    elif len(args.input) == 0:
         filenames = glob.glob("./*.xyz")
-        terminations = [i[-4:] for i in filenames]
-        if not all(terminations == ".xyz"):
-            raise InputError("File without xyz termination fed as input. Exiting.")
+        terminations = [i[-3:] for i in filenames]
+        if not all(terminations == "xyz"):
+            raise InputError(
+                f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
+            )
         molecules = [Molecule(filename=i) for i in filenames]
 
     else:
-        termination = input[-4:]
-        if termination == ".xyz":
-            molecules = molecules_from_file(input)
+        termination = args.input[0][-3:]
+        if termination == "xyz":
+            molecules = molecules_from_file(args.input[0])
         else:
-            raise InputError("File without xyz termination fed as input. Exiting.")
+            raise InputError(
+                f"File with {termination} instead of xyz termination fed as input. Exiting."
+            )
+
+    if args.c not in ["kmeans", "dbscan"]:
+        raise InputError("Unknown clustering strategy selected. Exiting.")
+
+    if args.m not in ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]:
+        raise InputError("Unknown metric for clustering selected. Exiting.")
 
     return (
         molecules,
@@ -168,3 +181,14 @@ def processargs(arguments):
         args.plotmode,
         args.verb,
     )
+
+
+def test_molecules_from_file(path="marc/test_files/"):
+    filenames = [
+        "3_h2o_conformers.xyz",
+    ]
+    for filename in filenames:
+        molecules = molecules_from_file(f"{path}{filename}", noh=False)
+        for molecule in molecules:
+            print(molecule.energy, molecule.coordinates, molecule.atoms)
+            assert molecule.energy is not None

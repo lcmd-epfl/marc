@@ -357,9 +357,9 @@ class Molecule:
 
         # The title line may contain an energy
         title = next(lines_iter).strip()
-        if title.lstrip("-").isdigit():
+        try:
             energy = float(title)
-        else:
+        except ValueError:
             energy = None
 
         # Use the number of atoms to not read beyond the end of a file
@@ -404,15 +404,17 @@ class Molecule:
 
     def set_am(self):
         n = len(self.atoms)
-        am = np.zeros((n, n), dtype=int)
+        am = np.zeros((n, n), dtype=float)
         row, col = np.triu_indices(n, 1)
         dm = scipy.spatial.distance.pdist(self.coordinates)
-        rm = scipy.spatial.distance.pdist(self.radii.reshape(-1,1), metric=lambda x, y: x + y)
-        am[row, col] = am[col, row] = dm - self.scale_factor * rm
-        self.am = (am < 0).astype(int)
+        rm = self.scale_factor * scipy.spatial.distance.pdist(
+            self.radii.reshape(-1, 1), metric=lambda x, y: x + y
+        )
+        am[row, col] = am[col, row] = dm - rm
+        self.am = am < 0
 
     def set_graph(self):
-        G = nx.from_numpy_matrix(self.am, create_using=nx.Graph)
+        G = nx.from_numpy_array(self.am, create_using=nx.Graph)
         an_dict = {i: self.atoms[i] for i in range(len(self.atoms))}
         coord_dict = {i: self.coordinates[i] for i in range(len(self.atoms))}
         nx.set_node_attributes(G, an_dict, "atomic_number")
@@ -423,7 +425,7 @@ class Molecule:
             ds[i] = np.linalg.norm(
                 self.coordinates[edge[0]] - self.coordinates[edge[1]]
             )
-            cs[i] = z[edge[0]] * z[edge[1]]
+            cs[i] = self.atoms[edge[0]] * self.atoms[edge[1]]
         b_dict = nx.edge_betweenness_centrality(G, normalized=False)
         d_dict = {edge: d for edge, d in zip(b_dict.keys(), ds)}
         c_dict = {edge: c for edge, c in zip(b_dict.keys(), cs)}
@@ -432,13 +434,145 @@ class Molecule:
         nx.set_edge_attributes(G, c_dict, "coulomb_term")
         self.graph = G
 
+    def __iter__(self):
+        for value in [
+            self.energy,
+            self.coordinates,
+            self.atoms,
+            self.radii,
+            self.am,
+            self.graph,
+        ]:
+            yield value
 
-def test_molecule():
-    lines = [
-        "3",
-        "-36.12",
-        "C  0.0  1.0  2.3",
-        "C  1.8  0.8  3.5",
-        "O 19.2  29.1  2.0",
+
+def test_compare_origin(path="marc/test_files/"):
+    chunk_a = [
+        "19",
+        "(2S)-2-Amino-3-methylbutanoic acid",
+        "  C      0.2036     -0.4958      0.3403",
+        "  N      1.4832     -1.2440      0.2997",
+        "  C      0.3147      0.9660      0.8346",
+        "  C     -1.0593      1.6179      0.8658",
+        "  C      0.9346      1.0303      2.2224",
+        "  C     -0.3596     -0.5230     -1.0775",
+        "  O      0.1045     -0.0437     -2.0961",
+        "  O     -1.5354     -1.1775     -1.2134",
+        "  H     -0.4768     -1.0587      1.0299",
+        "  H      1.8309     -1.3539      1.2292",
+        "  H      2.1548     -0.7502     -0.2505",
+        "  H      0.9641      1.5372      0.1249",
+        "  H     -1.5332      1.6117     -0.1249",
+        "  H     -0.9924      2.6651      1.1892",
+        "  H     -1.7373      1.1021      1.5594",
+        "  H      0.9116      2.0570      2.6127",
+        "  H      1.9862      0.7132      2.2244",
+        "  H      0.3950      0.3965      2.9394",
+        "  H     -1.8067     -1.1757     -2.1262",
     ]
-    a = Molecule(lines=lines)
+    molecule_a = Molecule(lines=chunk_a)
+    molecule_b = Molecule(filename=f"{path}L-Valine.xyz")
+    for value_a, value_b in zip(molecule_a, molecule_b):
+        if isinstance(value_a, np.ndarray):
+            assert np.allclose(value_a, value_b)
+        elif isinstance(value_a, list):
+            assert all(value_a == value_b)
+        elif isinstance(value_a, nx.Graph):
+            assert nx.is_isomorphic(value_a, value_b)
+        elif value_a is None:
+            assert value_b is None
+
+
+def test_molecule_from_lines():
+    chunks = []
+    molecule_1 = [
+        "19",
+        "(2S)-2-Amino-3-methylbutanoic acid",
+        "  C      0.2036     -0.4958      0.3403",
+        "  N      1.4832     -1.2440      0.2997",
+        "  C      0.3147      0.9660      0.8346",
+        "  C     -1.0593      1.6179      0.8658",
+        "  C      0.9346      1.0303      2.2224",
+        "  C     -0.3596     -0.5230     -1.0775",
+        "  O      0.1045     -0.0437     -2.0961",
+        "  O     -1.5354     -1.1775     -1.2134",
+        "  H     -0.4768     -1.0587      1.0299",
+        "  H      1.8309     -1.3539      1.2292",
+        "  H      2.1548     -0.7502     -0.2505",
+        "  H      0.9641      1.5372      0.1249",
+        "  H     -1.5332      1.6117     -0.1249",
+        "  H     -0.9924      2.6651      1.1892",
+        "  H     -1.7373      1.1021      1.5594",
+        "  H      0.9116      2.0570      2.6127",
+        "  H      1.9862      0.7132      2.2244",
+        "  H      0.3950      0.3965      2.9394",
+        "  H     -1.8067     -1.1757     -2.1262",
+    ]
+    molecule_2 = [
+        "46",
+        "Testosterone",
+        "  C     -4.0599     -2.1760     -0.8224",
+        "  O     -4.9516     -2.8840     -1.2414",
+        "  C     -4.2163     -0.6676     -0.7586",
+        "  C     -2.8826      0.0343     -0.9993",
+        "  C     -2.7857     -2.7158     -0.3131",
+        "  C     -1.7443     -1.9501      0.0575",
+        "  C     -0.5249     -2.5861      0.6659",
+        "  C      0.7827     -1.9356      0.2082",
+        "  C      0.7295     -0.4182      0.4294",
+        "  C      2.0267      0.2733     -0.0072",
+        "  C      3.3706     -0.1900      0.5799",
+        "  C      4.3192      1.0027      0.3273",
+        "  C      3.4317      2.2202     -0.0268",
+        "  O      3.9384      3.3043      0.7679",
+        "  C      1.9714      1.7980      0.3340",
+        "  C      1.7106      2.0852      1.8182",
+        "  C      0.8686      2.4201     -0.5385",
+        "  C     -0.4798      1.7315     -0.2601",
+        "  C     -0.4282      0.1930     -0.4091",
+        "  C     -1.7900     -0.4363     -0.0132",
+        "  H     -2.7575     -3.8052     -0.2565",
+        "  H     -0.6135     -2.5201      1.7733",
+        "  H     -0.4925     -3.6738      0.4451",
+        "  H      1.6336     -2.3732      0.7646",
+        "  H      0.9690     -2.1675     -0.8583",
+        "  H      0.5479     -0.2168      1.5138",
+        "  H      2.1058      0.1678     -1.1210",
+        "  H      3.2853     -0.4094      1.6573",
+        "  H      3.7364     -1.1101      0.0994",
+        "  H      4.9267      1.2382      1.2217",
+        "  H      5.0342      0.7890     -0.4822",
+        "  H      3.5293      2.5237     -1.0880",
+        "  H      3.2906      4.0296      0.8195",
+        "  H      0.8832      1.4797      2.2078",
+        "  H      2.5972      1.8604      2.4268",
+        "  H      1.4613      3.1361      1.9910",
+        "  H      0.7818      3.5044     -0.3452",
+        "  H      1.1247      2.3262     -1.6107",
+        "  H     -0.8205      1.9959      0.7596",
+        "  H     -1.2411      2.1442     -0.9502",
+        "  H     -0.2361     -0.0466     -1.4843",
+        "  H     -4.6390     -0.3984      0.2304",
+        "  H     -4.9734     -0.3373     -1.4982",
+        "  H     -2.5493     -0.1544     -2.0405",
+        "  H     -3.0184      1.1303     -0.9178",
+        "  H     -2.0604     -0.0823      1.0166",
+    ]
+    for chunk in chunks:
+        a = Molecule(filename=f"{filename}")
+        assert a.energy is None
+        assert nx.is_connected(a.graph)
+
+
+def test_molecule_from_file(path="marc/test_files/"):
+    filenames = [
+        "L-Valine.xyz",
+        "Benzaldehyde.xyz",
+        "Ferrocene.xyz",
+        "Testosterone.xyz",
+    ]
+    for filename in filenames:
+        a = Molecule(filename=f"{path}{filename}")
+        assert a.energy is None
+        print(a.coordinates, a.am)
+        assert nx.is_connected(a.graph)

@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 
-from marc.molecule import test_molecule
+import os
+
+from marc.helpers import test_molecules_from_file
+from marc.molecule import (
+    test_compare_origin,
+    test_molecule_from_file,
+    test_molecule_from_lines,
+)
+
+test_files_dir = f"{os.path.dirname(os.path.abspath(__file__))}/test_files/"
 
 if __name__ == "__main__":
-    test_molecule()
+    test_compare_origin(path=test_files_dir)
+    test_molecule_from_lines()
+    test_molecule_from_file(path=test_files_dir)
+    test_molecules_from_file(path=test_files_dir)
