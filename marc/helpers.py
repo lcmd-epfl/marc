@@ -118,7 +118,7 @@ def processargs(arguments):
         dest="m",
         type=str,
         default="ewrmsd",
-        help="Metric to use to define distance. (default: ewrmsd)",
+        help="Metric to use to define distance. (default: mix)",
     )
     mbuilder.add_argument(
         "-v",
@@ -167,6 +167,31 @@ def processargs(arguments):
             raise InputError(
                 f"File with {termination} instead of xyz termination fed as input. Exiting."
             )
+    # Check for atom ordering
+    for molecule_a, molecule_b in zip(molecules, molecules[1:]):
+        atoms_a = molecule_a.atoms
+        atoms_b = molecule_b.atoms
+        if all(atoms_a == atoms_b):
+            continue
+        else:
+            if verb > 0:
+                print("Molecule geometries are not sorted.")
+            sort = True
+            break
+        sort = False
+
+    # Check for isomorphism
+    for molecule_a, molecule_b in zip(molecules, molecules[1:]):
+        g_a = molecule_a.graph
+        g_b = molecule_b.graph
+        if nx.is_isomorphic(g_a, g_b):
+            continue
+        else:
+            if verb > 0:
+                print("Molecule topologies are not isomorphic.")
+            isomorph = False
+            break
+        isomorph = True
 
     if args.c not in ["kmeans", "dbscan"]:
         raise InputError("Unknown clustering strategy selected. Exiting.")
