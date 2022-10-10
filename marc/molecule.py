@@ -127,6 +127,8 @@ symbol_to_number = {
     "Uub": 112,
 }
 
+number_to_symbol = {v: k for k, v in symbol_to_number.items()}
+
 missing = 0.2
 covalent_radii = np.array(
     [
@@ -329,6 +331,8 @@ class Molecule:
         atoms = np.array(atoms, dtype=int)
         V = np.array(V)
         self.title = title
+        self.coordinates_with_h = V
+        self.atoms_with_h = atoms
         if noh:
             self.atoms = atoms[np.where(atoms > 1)]
             self.coordinates = V[np.where(atoms > 1)]
@@ -386,6 +390,8 @@ class Molecule:
         atoms = np.array(atoms, dtype=int)
         V = np.array(V)
         self.title = title
+        self.coordinates_with_h = V
+        self.atoms_with_h = atoms
         if noh:
             self.atoms = atoms[np.where(atoms > 1)]
             self.coordinates = V[np.where(atoms > 1)]
@@ -433,6 +439,21 @@ class Molecule:
         nx.set_edge_attributes(G, d_dict, "distance")
         nx.set_edge_attributes(G, c_dict, "coulomb_term")
         self.graph = G
+
+    def write(self, rootname="output"):
+        filename = f"{rootname}.xyz"
+        f = open(filename, "w+")
+        print(f"{len(self.atoms_with_h)}", file=f)
+        if self.energy is not None:
+            print(f"{self.energy}", file=f)
+        else:
+            print(f"{self.title}", file=f)
+        for i, atom in enumerate(self.atoms_with_h):
+            print(
+                f"{number_to_symbol[atom]}    {self.coordinates_with_h[i][0]}    {self.coordinates_with_h[i][1]}    {self.coordinates_with_h[i][2]}",
+                file=f,
+            )
+        f.close()
 
     def __iter__(self):
         for value in [
@@ -574,5 +595,16 @@ def test_molecule_from_file(path="marc/test_files/"):
     for filename in filenames:
         a = Molecule(filename=f"{path}{filename}")
         assert a.energy is None
-        print(a.coordinates, a.am)
         assert nx.is_connected(a.graph)
+
+
+def test_molecule_to_file(path="marc/test_files/"):
+    filenames = [
+        "L-Valine.xyz",
+        "Benzaldehyde.xyz",
+        "Ferrocene.xyz",
+        "Testosterone.xyz",
+    ]
+    for filename in filenames:
+        a = Molecule(filename=f"{path}{filename}")
+        a.write("test")

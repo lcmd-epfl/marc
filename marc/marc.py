@@ -16,9 +16,11 @@ from .rmsd import rmsd_matrix
 
 if __name__ == "__main__" or __name__ == "marc.marc":
     (
+        basename,
         molecules,
         c,
         m,
+        n_clusters,
         plotmode,
         verb,
     ) = processargs(sys.argv[1:])
@@ -78,9 +80,14 @@ if m == ["mix"]:
 A = np.abs(A) / np.max(A)
 
 if c == "kmeans":
-    n_clusters = int(l * 0.1)
     indices = kmeans_clustering(n_clusters, A)
-    #
-    # if c == "dbscan":
-    n_neighbors = int(l * 0.1)
+
+if c == "dbscan":
+    n_neighbors = int(l / n_clusters)
     indices = dbscan_clustering(n_neighbors, A)
+
+
+# Write the indices that were selected
+
+for i, idx in enumerate(indices):
+    molecules[idx].write(f"{basename}_selected_{i}")

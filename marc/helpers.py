@@ -121,6 +121,15 @@ def processargs(arguments):
         help="Metric to use to define distance. (default: mix)",
     )
     mbuilder.add_argument(
+        "-n",
+        "--n",
+        "--n_clusters",
+        dest="n",
+        type=int,
+        default=10,
+        help="Number of representative conformers to select. (default: 10)",
+    )
+    mbuilder.add_argument(
         "-v",
         "--v",
         "--verb",
@@ -144,6 +153,7 @@ def processargs(arguments):
     if len(args.input) > 1:
         filenames = args.input
         terminations = [i[-3:] for i in filenames]
+        basename = filenames[0].split("/")[-1].split(".")[0]
         if not all(terminations == "xyz"):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
@@ -153,6 +163,7 @@ def processargs(arguments):
     elif len(args.input) == 0:
         filenames = glob.glob("./*.xyz")
         terminations = [i[-3:] for i in filenames]
+        basename = filenames[0].split("/")[-1].split(".")[0]
         if not all(terminations == "xyz"):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
@@ -160,6 +171,7 @@ def processargs(arguments):
         molecules = [Molecule(filename=i) for i in filenames]
 
     else:
+        basename = args.input[0].split("/")[-1].split(".")[0]
         termination = args.input[0][-3:]
         if termination == "xyz":
             molecules = molecules_from_file(args.input[0])
@@ -200,9 +212,11 @@ def processargs(arguments):
         raise InputError("Unknown metric for clustering selected. Exiting.")
 
     return (
+        basename,
         molecules,
         args.c,
         args.m,
+        args.n,
         args.plotmode,
         args.verb,
     )
