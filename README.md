@@ -1,4 +1,4 @@
-volcanic: Automated Generator of Volcano Plots
+marc: Modular Analysis of Representative Conformers
 ==============================================
 <!-- zenodo badge will go here -->
 
