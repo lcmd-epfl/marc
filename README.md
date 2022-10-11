@@ -1,6 +1,6 @@
 volcanic: Automated Generator of Volcano Plots
 ==============================================
-[![DOI](https://zenodo.org/badge/381737392.svg)](https://zenodo.org/badge/latestdoi/381737392)
+<!-- zenodo badge will go here -->
 
 ![marc logo](./images/marc_logo.png)
 
@@ -16,17 +16,15 @@ The code runs on pure python with the following dependencies:
 - `numpy`
 - `scipy`
 - `matplotlib`
-- `pandas`
 - `scikit-learn`
 
 
 ## Install [↑](#install)
 
-Download and add volcanic.py to your path. No strings attached. Run as:
+Download and add marc.py to your path. No strings attached. Run as:
 
 ```python
-python volcanic.py [-h] [-version] -i [FILENAMES] [-df DFILENAMES] [-nd ND] [-v VERB] [-r RUNMODE] [-lsfer | -thermo | -kinetic | -es | -tof | -all] [-T TEMP] [-pm PLOTMODE] [-ic IC] [-fc FC]
-                [-rm RMARGIN] [-lm LMARGIN] [-np NPOINTS] [-d] [-is IMPUTER_STRAT] [-refill]
+python marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 You can also execute:
@@ -35,44 +33,36 @@ You can also execute:
 python setup.py install
 ```
 
-to install volcanic as a python module. Afterwards, you can call volcanic as:
+to install marc as a python module. Afterwards, you can call volcanic as:
 
 ```python 
-python -m volcanic [-h] [-version] -i [FILENAMES] [-df DFILENAMES] [-nd ND] [-v VERB] [-r RUNMODE] [-lsfer | -thermo | -kinetic | -es | -tof | -all] [-T TEMP] [-pm PLOTMODE] [-ic IC] [-fc FC]
-                [-rm RMARGIN] [-lm LMARGIN] [-np NPOINTS] [-d] [-is IMPUTER_STRAT] [-refill]
+python -m marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Options can be consulted using the `-h` flag in either case. The help menu is quite detailed. 
 
-Note that the volcano plot and activity map functions are directly exposed in `volcanic.py` as `volcanic_2d` and `volcanic_3d` respectively, in case you want to incorporate them in your own code.
+Note that the main functions are all exposed and called directly in sequential order from `marc.py`, in case you want to incorporate them in your own code.
 
 ## Examples [↑](#examples)
 
-The examples subdirectory contains a copious amount of tests which double as examples. Any of the data files can be run as:
+The examples subdirectory contains some examples in [CREST](https://xtb-docs.readthedocs.io/en/latest/crest.html) format. Any of the xyz files can be run as:
 
 ```python
-python volcanic.py -i [FILENAME]
+python marc.py -i [FILENAME]
 ```
 
-This will query the user for options and generate the volcano plots as png images. Options can be consulted with the `-h` flag.
+Options can be consulted with the `-h` flag.
 
-The input of volcanic.py is a `pandas` compatible dataframe, which includes plain .csv and .xls files. 
+The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking, can be provided in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in any units. The energy window specified in the `ewin` command line argument should be in the same units (typically, kcal/mol).
 
-Regarding format, volcanic.py expects headers for all columns. The first column must contain names/identifiers. Then, volcanic.py expects a number of columns with relative free energies for the species in the catalytic cycle (in order of appearance), whose headers must contain "TS" if the species is a transition state, and a final column whose header is "Product" containing the reaction energy. Non-energy descriptors can be input as a separate file using the `-df` flag or as extra columns whose headers contain the word "Descriptor".
+The output of marc are `n` selected xyz files which will be called `INPUT_selected_n.xyz` in the runtime directory.
 
-High verbosity levels (`-v 1`, `-v 2`, etc.) will print the output as .csv files as well, which can be used to plot your volcano plot or activity map using external tools. An example is found in the `pretty_plotting_example` directory in this repository. Keep increasing the verbosity to get even more detailed output. This can be useful for understanding what the code is doing and what can have possibly gone wrong. To be as automated as possible, reasonable default values are set for most choices.
+High verbosity levels (`-v 1`, `-v 2`, etc.) will print significantly more information while marc runs. To be as automated as possible, reasonable default values are set for most choices.
 
 
 ## Citation [↑](#citation)
 
-Please cite the accompanying manuscript, which clarifies the details of volcano plot construction. You can find it [here](https://rdcu.be/cT7uu) and in the reference:
-
-```
-Laplaza, R., Das, S., Wodrich, M.D. et al. Constructing and interpreting volcano plots and activity maps to navigate homogeneous catalyst landscapes. Nat Protoc (2022). https://doi.org/10.1038/s41596-022-00726-2
-```
-
-Kinetic volcano plots were introduced [here](https://doi.org/10.1039/C6SC01660J) and turnover frequency/energy span volcano plots were introduced [here](https://doi.org/10.1021/acscatal.9b00717). The energy span model was introduced by Kozuch and Shaik [here](https://doi.org/10.1021/ar1000956). Please include those citations where relevant. A comprehensive account can be found [here](https://doi.org/10.1021/acs.accounts.0c00857).
-
+Please cite our work with the repository DOI.
 
 ---
 
