@@ -8,6 +8,8 @@ import scipy.spatial
 
 from marc.exceptions import InputError
 
+ha_to_kcalmol = 627.509
+
 symbol_to_number = {
     "Em": 0,  # empty site
     "Vc": 0,  # empty site
@@ -299,9 +301,9 @@ class Molecule:
 
         # The title line may contain an energy
         title = f.readline().strip()
-        if title.lstrip("-").isdigit():
-            energy = float(title)
-        else:
+        try:
+            energy = float(title) * ha_to_kcalmol
+        except ValueError:
             energy = None
 
         # Use the number of atoms to not read beyond the end of a file
@@ -362,7 +364,7 @@ class Molecule:
         # The title line may contain an energy
         title = next(lines_iter).strip()
         try:
-            energy = float(title)
+            energy = float(title) * ha_to_kcalmol
         except ValueError:
             energy = None
 

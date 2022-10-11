@@ -53,9 +53,9 @@ python marc.py -i [FILENAME]
 
 Options can be consulted with the `-h` flag.
 
-The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking, can be provided in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in any units. The energy window specified in the `ewin` command line argument should be in the same units (typically, kcal/mol).
+The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking, can be provided in atomic units in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in any units. The energy window specified in the `ewin` command line argument should be in the same units (typically, kcal/mol, as in the CREST output).
 
-The output of marc are `n` selected xyz files which will be called `INPUT_selected_n.xyz` in the runtime directory.
+The output of marc are `n` selected xyz files which will be called `INPUT_selected_n.xyz` in the runtime directory. Conformers discarded by the `ewin` threshold will be printed with the `rejected` appendix instead.
 
 High verbosity levels (`-v 1`, `-v 2`, etc.) will print significantly more information while marc runs. To be as automated as possible, reasonable default values are set for most choices.
 

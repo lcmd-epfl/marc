@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
-import re
 import glob
+import re
 from itertools import cycle
 
 import networkx as nx
@@ -273,7 +273,7 @@ def processargs(arguments):
 
     return (
         basename,
-        molecules,
+        np.array(molecules, dtype=object),
         args.c,
         args.m,
         args.n,

@@ -48,7 +48,7 @@ if verb > 0:
 if m in ["rmsd", "ewrmsd", "mix"]:
     rmsd_matrix = rmsd_matrix(molecules)
     if plotmode > 1:
-        plot_dendrogram(rmsd_matrix, "RMSD")
+        plot_dendrogram(rmsd_matrix, "RMSD", verb)
     A = rmsd_matrix
 
 if m in ["erel", "ewrmsd", "ewda", "mix"]:
@@ -60,13 +60,13 @@ if m in ["erel", "ewrmsd", "ewda", "mix"]:
         )
     erel_matrix = erel_matrix(molecules)
     if plotmode > 1:
-        plot_dendrogram(erel_matrix, "E_{rel}")
+        plot_dendrogram(erel_matrix, "E_{rel}", verb)
     A = erel_matrix
 
 if m in ["da", "ewda", "mix"]:
     da_matrix = da_matrix(molecules)
     if plotmode > 1:
-        plot_dendrogram(da_matrix, "Dihedral")
+        plot_dendrogram(da_matrix, "Dihedral", verb)
     A = da_matrix
 
 # Mix the metric matrices if desired
@@ -103,6 +103,7 @@ if c == "affprop":
 # If requested, prune again based on average cluster energies
 
 if ewin is not None:
+    rejected = []
     energies = [molecule.energy for molecule in molecules]
     if None in energies:
         raise InputError(
@@ -112,26 +113,39 @@ if ewin is not None:
     avgs = np.zeros(len(clusters), dtype=float)
     stds = np.zeros(len(clusters), dtype=float)
     for i, cluster in enumerate(clusters):
+        if verb > 2:
+            print(
+                f"Going through {list(cluster)} for which representative {indices[i]} was selected."
+            )
         energies = np.array(
             [molecule.energy for molecule in molecules[cluster]], dtype=float
         )
-        avgs[i] = energy.mean
-        stds[i] = energy.std * 0.5
+        avgs[i] = energies.mean()
+        stds[i] = energies.std() * 0.5
     lowest = np.min(avgs)
-    accepted = np.where(avgs < lowest + stds + ewin)
+    accepted = list(np.where(avgs < ewin + lowest + stds)[0])
+    if verb > 2:
+        print(f"Accepted indices are {accepted}.")
     for i, idx in enumerate(indices):
-        if accepted[i]:
+        if i in accepted:
             if verb > 1:
                 print(
-                    f"Accepting selected conformer number {i} due to energy threshold."
+                    f"Accepting selected conformer number {idx} due to energy threshold."
                 )
-            pass
-        if not accepted[i]:
+        else:
             if verb > 1:
-                print(f"Removed selected conformer number {i} due to energy threshold.")
-            indices.pop(i)
+                print(
+                    f"Removed selected conformer number {idx} due to energy threshold."
+                )
+            rejected.append(indices.pop(i))
 
 # Write the indices that were selected
 
 for i, idx in enumerate(indices):
     molecules[idx].write(f"{basename}_selected_{i}")
+
+# Write the indices that were rejected
+
+if ewin is not None and rejected:
+    for i, idx in enumerate(rejected):
+        molecules[idx].write(f"{basename}_rejected_{i}")

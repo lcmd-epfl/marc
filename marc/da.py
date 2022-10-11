@@ -25,8 +25,8 @@ def da_matrix(mols):
     # All molecules share the same connectivity (at least in principle)
     bc = nx.betweenness_centrality(graphs[0], normalized=True, endpoints=True)
     indices = sorted(range(len(bc)), key=lambda i: bc[i])[-4:]
-    for i, _ in range(n):
-        for j in range(i, n - 1):
+    for i, _ in range(0, n - 1):
+        for j in range(i + 1, n):
             M[i, j] = M[j, i] = delta_dihedral(indices, coords[i], coords[j])
     return M
 

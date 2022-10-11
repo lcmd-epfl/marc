@@ -13,12 +13,14 @@ from sklearn.manifold import MDS
 from sklearn.neighbors import NearestCentroid
 
 
-def plot_dendrogram(m: np.ndarray, label: str):
+def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     if verb > 0:
         print(f"Max pairwise {label}: {np.max(m)} in {label} units.")
+        if verb > 2:
+            print(f"Distance matrix is:\n {m}")
     assert np.all(m - m.T < 1e-6)
-    reduced_distances = squareform(m)
-    linkage = scipy.cluster.hierarchy.linkage(reduced_distances, method="average")
+    reduced_distances = squareform(m, force="tovector")
+    linkage = scipy.cluster.hierarchy.linkage(reduced_distances, method="single")
     plt.title(f"{label} average linkage hierarchical clustering")
     dn = scipy.cluster.hierarchy.dendrogram(
         linkage, no_labels=True, count_sort="descendent"
@@ -26,6 +28,7 @@ def plot_dendrogram(m: np.ndarray, label: str):
     if verb > 0:
         print(f"Saving dendrogram plot as {label}_dendrogram.png in working directory.")
     plt.savefig(f"{label}_dendrogram.png")
+    plt.close()
 
 
 def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
@@ -44,7 +47,7 @@ def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
 
         # get all points assigned to each cluster:
         cluster_pts = x[km.labels_ == iclust]
-        clusters.append(cluster_pts)
+        clusters.append(np.where(km.labels_ == iclust)[0])
 
         # get all indices of points assigned to this cluster:
         cluster_pts_indices = np.where(km.labels_ == iclust)[0]
@@ -78,7 +81,7 @@ def affprop_clustering(m, verb=0):
 
         # get all points assigned to each cluster:
         cluster_pts = m[ap.labels_ == iclust]
-        clusters.append(cluster_pts)
+        clusters.append(np.where(ap.labels_ == iclust)[0])
 
         min_idx = ap.cluster_centers_indices_[iclust]
 
@@ -110,7 +113,7 @@ def agglomerative_clustering(n_clusters: int, m: np.ndarray, verb=0):
 
         # get all points assigned to each cluster:
         cluster_pts = m[ac.labels_ == iclust]
-        clusters.append(cluster_pts)
+        clusters.append(np.where(ac.labels_ == iclust)[0])
 
         # get all indices of points assigned to this cluster:
         cluster_pts_indices = np.where(ac.labels_ == iclust)[0]

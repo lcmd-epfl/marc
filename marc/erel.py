@@ -19,7 +19,7 @@ def erel_matrix(mols):
     energies = np.array([mol.energy for mol in mols])
     n = len(mols)
     M = np.zeros((n, n))
-    for i in range(n):
-        for j in range(i, n - 1):
+    for i in range(0, n - 1):
+        for j in range(i + 1, n):
             M[i, j] = M[j, i] = np.abs(energies[i] - energies[j])
     return M
