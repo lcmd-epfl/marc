@@ -6,7 +6,12 @@ import sys
 
 import numpy as np
 
-from .clustering import dbscan_clustering, kmeans_clustering, plot_dendrogram
+from .clustering import (
+    affprop_clustering,
+    agglomerative_clustering,
+    kmeans_clustering,
+    plot_dendrogram,
+)
 from .da import da_matrix
 from .erel import erel_matrix
 from .exceptions import InputError
@@ -21,6 +26,7 @@ if __name__ == "__main__" or __name__ == "marc.marc":
         c,
         m,
         n_clusters,
+        ewin,
         plotmode,
         verb,
     ) = processargs(sys.argv[1:])
@@ -30,7 +36,13 @@ else:
 # Fill in molecule data
 l = len(molecules)
 if verb > 0:
-    print(f"marc has detected {l} molecules in input.")
+    print(
+        f"marc has detected {l} molecules in input, and will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
+    )
+    if verb > 1 and ewin is not None:
+        print(
+            f"An energy window of {ewin} in energy units will be considered for the output conformers."
+        )
 
 # Generate the desired metric matrix
 if m in ["rmsd", "ewrmsd", "mix"]:
@@ -80,12 +92,44 @@ if m == ["mix"]:
 A = np.abs(A) / np.max(A)
 
 if c == "kmeans":
-    indices = kmeans_clustering(n_clusters, A)
+    indices, clusters = kmeans_clustering(n_clusters, A, verb)
 
-if c == "dbscan":
-    n_neighbors = int(l / n_clusters)
-    indices = dbscan_clustering(n_neighbors, A)
+if c == "agglomerative":
+    indices, clusters = agglomerative_clustering(n_clusters, A, verb)
 
+if c == "affprop":
+    indices, clusters = affprop_clustering(A, verb)
+
+# If requested, prune again based on average cluster energies
+
+if ewin is not None:
+    energies = [molecule.energy for molecule in molecules]
+    if None in energies:
+        raise InputError(
+            """One or more molecules do not have an associated energy. Cannot use
+             energy metrics. Exiting."""
+        )
+    avgs = np.zeros(len(clusters), dtype=float)
+    stds = np.zeros(len(clusters), dtype=float)
+    for i, cluster in enumerate(clusters):
+        energies = np.array(
+            [molecule.energy for molecule in molecules[cluster]], dtype=float
+        )
+        avgs[i] = energy.mean
+        stds[i] = energy.std * 0.5
+    lowest = np.min(avgs)
+    accepted = np.where(avgs < lowest + stds + ewin)
+    for i, idx in enumerate(indices):
+        if accepted[i]:
+            if verb > 1:
+                print(
+                    f"Accepting selected conformer number {i} due to energy threshold."
+                )
+            pass
+        if not accepted[i]:
+            if verb > 1:
+                print(f"Removed selected conformer number {i} due to energy threshold.")
+            indices.pop(i)
 
 # Write the indices that were selected
 

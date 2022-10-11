@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import re
 import glob
 from itertools import cycle
 
@@ -88,7 +89,6 @@ def processargs(arguments):
     mbuilder.add_argument(
         "-version", "--version", action="version", version="%(prog)s 1.0"
     )
-    runmode_arg = mbuilder.add_mutually_exclusive_group()
     mbuilder.add_argument(
         "-i",
         "--i",
@@ -130,6 +130,20 @@ def processargs(arguments):
         help="Number of representative conformers to select. (default: 10)",
     )
     mbuilder.add_argument(
+        "-ewin",
+        "--ewin",
+        dest="ewin",
+        default=None,
+        help="If set to a float, energy window for conformers to be accepted. (default: None)",
+    )
+    mbuilder.add_argument(
+        "-efile",
+        "--efile",
+        dest="efile",
+        default=None,
+        help="If set to a filename, file containing the energies of each conformer in crest format. (default: None)",
+    )
+    mbuilder.add_argument(
         "-v",
         "--v",
         "--verb",
@@ -160,6 +174,7 @@ def processargs(arguments):
             )
         molecules = [Molecule(filename=i) for i in filenames]
 
+    # This is left as a hook, but should basically never trigger due to argparse
     elif len(args.input) == 0:
         filenames = glob.glob("./*.xyz")
         terminations = [i[-3:] for i in filenames]
@@ -179,6 +194,51 @@ def processargs(arguments):
             raise InputError(
                 f"File with {termination} instead of xyz termination fed as input. Exiting."
             )
+    # Set energy window if requested
+    if args.ewin is not None:
+        try:
+            ewin = float(args.ewin)
+        except TypeError:
+            raise InputError(
+                f"ewin was set to {args.ewin} which is not a float nor None. Exiting."
+            )
+    else:
+        ewin = None
+
+    # Set energy file if provided
+    if args.efile is not None:
+        try:
+            filename = str(args.efile)
+        except TypeError:
+            raise InputError(
+                f"efile was set to {args.efile} which is not a string nor None. Exiting."
+            )
+        try:
+            energies = []
+            g = open(filename, "rb")
+            _RE_COMBINE_WHITESPACE = re.compile(r"\s+")
+            for line in g.readlines():
+                trline = _RE_COMBINE_WHITESPACE.sub(" ", line).strip()
+                id = int(trline.split(" ")[0])
+                e = float(trline.split(" ")[0])
+                energies.append(e)
+            g.close()
+        except OSError:
+            raise InputError(
+                f"efile was set to {filename} which could not be found or opened to read energies. Exiting."
+            )
+        except TypeError:
+            raise InputError(
+                f"Line \n{line}\n did not satisfy the expected crest-like format. Exiting."
+            )
+        # Setting up energies in molecule objects
+        if verb > 0:
+            print(
+                "Setting up energies from file. This will overwrite the energy values in the xyz files. Double check the ordering!"
+            )
+        for molecule, energy in zip(molecules, energies):
+            molecule.energy == energy
+
     # Check for atom ordering
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
         atoms_a = molecule_a.atoms
@@ -205,7 +265,7 @@ def processargs(arguments):
             break
         isomorph = True
 
-    if args.c not in ["kmeans", "dbscan"]:
+    if args.c not in ["kmeans", "agglomerative", "affprop"]:
         raise InputError("Unknown clustering strategy selected. Exiting.")
 
     if args.m not in ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]:
@@ -217,6 +277,7 @@ def processargs(arguments):
         args.c,
         args.m,
         args.n,
+        ewin,
         args.plotmode,
         args.verb,
     )

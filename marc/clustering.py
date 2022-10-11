@@ -8,7 +8,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
 from scipy.spatial.distance import euclidean, squareform
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
+from sklearn.manifold import MDS
+from sklearn.neighbors import NearestCentroid
 
 
 def plot_dendrogram(m: np.ndarray, label: str):
@@ -27,23 +29,93 @@ def plot_dendrogram(m: np.ndarray, label: str):
 
 
 def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
+    mds = MDS(dissimilarity="precomputed", n_components=2)
+    x = mds.fit_transform(m)
     km = KMeans(n_clusters=n_clusters, n_init=50)
-    cm = km.fit_predict(m)
+    cm = km.fit_predict(x)
     u, c = np.unique(cm, return_counts=True)
     closest_pt_idx = []
+    clusters = []
     if verb > 0:
         print(
             f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
-    for iclust in range(km.n_clusters):
+    for iclust in range(u.size):
 
         # get all points assigned to each cluster:
-        cluster_pts = m[km.labels_ == iclust]
+        cluster_pts = x[km.labels_ == iclust]
+        clusters.append(cluster_pts)
 
         # get all indices of points assigned to this cluster:
         cluster_pts_indices = np.where(km.labels_ == iclust)[0]
 
         cluster_cen = km.cluster_centers_[iclust]
+        min_idx = np.argmin(
+            [euclidean(x[idx], cluster_cen) for idx in cluster_pts_indices]
+        )
+
+        # Testing:
+        if verb > 1:
+            print(
+                f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]}"
+            )
+        closest_pt_idx.append(cluster_pts_indices[min_idx])
+    return closest_pt_idx, clusters
+
+
+def affprop_clustering(m, verb=0):
+    m = np.ones_like(m) - m
+    ap = AffinityPropagation(affinity="precomputed")
+    cm = ap.fit_predict(m)
+    u, c = np.unique(cm, return_counts=True)
+    closest_pt_idx = []
+    clusters = []
+    if verb > 0:
+        print(
+            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
+        )
+    for iclust in range(u.size):
+
+        # get all points assigned to each cluster:
+        cluster_pts = m[ap.labels_ == iclust]
+        clusters.append(cluster_pts)
+
+        min_idx = ap.cluster_centers_indices_[iclust]
+
+        # Testing:
+        if verb > 1:
+            print(
+                f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]}"
+            )
+        closest_pt_idx.append(ap.cluster_centers_indices_[iclust])
+    return closest_pt_idx, clusters
+
+
+def agglomerative_clustering(n_clusters: int, m: np.ndarray, verb=0):
+    m = np.ones_like(m) - m
+    ac = AgglomerativeClustering(
+        n_clusters=n_clusters, affinity="precomputed", linkage="single"
+    )
+    cm = ac.fit_predict(m)
+    clf = NearestCentroid()
+    clf.fit(m, cm)
+    u, c = np.unique(cm, return_counts=True)
+    closest_pt_idx = []
+    clusters = []
+    if verb > 0:
+        print(
+            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
+        )
+    for iclust in range(u.size):
+
+        # get all points assigned to each cluster:
+        cluster_pts = m[ac.labels_ == iclust]
+        clusters.append(cluster_pts)
+
+        # get all indices of points assigned to this cluster:
+        cluster_pts_indices = np.where(ac.labels_ == iclust)[0]
+
+        cluster_cen = clf.centroids_[iclust]
         min_idx = np.argmin(
             [euclidean(m[idx], cluster_cen) for idx in cluster_pts_indices]
         )
@@ -54,21 +126,4 @@ def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
-    return closest_pt_idx
-
-
-def dbscan_clustering(n_neighbors: int, m: np.ndarray, verb=0):
-    dbsc = DBSCAN(eps=0.5, min_samples=n_neighbors)
-    cm = dbsc.fit_predict(m)
-    u, c = np.unique(cm, return_counts=True)
-    closest_pt_idx = []
-    if verb > 0:
-        print(
-            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
-        )
-    for iclust, idx in enumerate(dbsc.core_sample_indices_):
-
-        if verb > 1:
-            print(f"Core point of cluster {iclust} center has index {idx}")
-        closest_pt_idx.append(idx)
-    return closest_pt_idx
+    return closest_pt_idx, clusters
