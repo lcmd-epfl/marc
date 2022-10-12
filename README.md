@@ -1,4 +1,4 @@
-marc: Modular Analysis of Representative Conformers
+marc: modular Analysis of Representative Conformers
 ==============================================
 <!-- zenodo badge will go here -->
 
@@ -7,6 +7,7 @@ marc: Modular Analysis of Representative Conformers
 ## Contents
 * [About](#about-)
 * [Install](#install-)
+* [Concept](#concept-)
 * [Examples](#examples-)
 * [Citation](#citation-)
 
@@ -24,7 +25,7 @@ The code runs on pure python with the following dependencies:
 Download and add marc.py to your path. No strings attached. Run as:
 
 ```python
-python marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python marc.py [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 You can also execute:
@@ -33,7 +34,7 @@ You can also execute:
 python setup.py install
 ```
 
-to install marc as a python module. Afterwards, you can call volcanic as:
+to install marc as a python module. Afterwards, you can call marc as:
 
 ```python 
 python -m marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
@@ -43,9 +44,21 @@ Options can be consulted using the `-h` flag in either case. The help menu is qu
 
 Note that the main functions are all exposed and called directly in sequential order from `marc.py`, in case you want to incorporate them in your own code.
 
+## Concept [↑](#concept)
+
+Several strategies are available for the generation of conformational ensembles. Typically, one then needs to sort the ensemble and proceed with the study of the most energetically favored conformers, which will be the most accesible thermodynamically following a Boltzmann distribution.
+
+However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Hence, marc provides a convenient way of accomplishing two goals:
+
+- Select a handful of conformers that are representative of the diversity of the conformational ensemble using combined metrics.
+- Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag.
+- Proceed iteratively, helping the user select non-redundant conformers than can then be refined with a higher level and fed back to marc.
+
+The default clustering metric used in marc is the `"ewrmsd"` distance, which measures pairwise similarity based on heavy-atom rmsd times the energy difference. The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy. Other possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule) and `"mix"` (combining geometry, dihedrals and energy).  
+
 ## Examples [↑](#examples)
 
-The examples subdirectory contains some examples in [CREST](https://xtb-docs.readthedocs.io/en/latest/crest.html) format. Any of the xyz files can be run as:
+The examples subdirectory contains some examples obtained by running [CREST](https://xtb-docs.readthedocs.io/en/latest/crest.html). Any of the xyz files can be run as:
 
 ```python
 python marc.py -i [FILENAME]
