@@ -149,7 +149,7 @@ def processargs(arguments):
         "--verb",
         dest="verb",
         type=int,
-        default=0,
+        default=1,
         help="Verbosity level of the code. Higher is more verbose and viceversa. (default: 1)",
     )
     mbuilder.add_argument(
@@ -232,7 +232,7 @@ def processargs(arguments):
                 f"Line \n{line}\n did not satisfy the expected crest-like format. Exiting."
             )
         # Setting up energies in molecule objects
-        if verb > 0:
+        if args.verb > 0:
             print(
                 "Setting up energies from file. This will overwrite the energy values in the xyz files. Double check the ordering!"
             )
@@ -246,7 +246,7 @@ def processargs(arguments):
         if all(atoms_a == atoms_b):
             continue
         else:
-            if verb > 0:
+            if args.verb > 0:
                 print("Molecule geometries are not sorted.")
             sort = True
             break
@@ -259,7 +259,7 @@ def processargs(arguments):
         if nx.is_isomorphic(g_a, g_b):
             continue
         else:
-            if verb > 0:
+            if args.verb > 0:
                 print("Molecule topologies are not isomorphic.")
             isomorph = False
             break
