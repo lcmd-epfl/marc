@@ -73,18 +73,18 @@ if m in ["da", "ewda", "mix"]:
 if m == ["ewrmsd"]:
     rmsd_matrix = np.abs(rmsd_matrix) / np.max(rmsd_matrix)
     erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = rmsd_matrix * erel_matrix
+    A = rmsd_matrix + erel_matrix
 
 if m == ["ewrda"]:
     da_matrix = np.abs(da_matrix) / np.max(da_matrix)
     erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = da_matrix * erel_matrix
+    A = da_matrix + erel_matrix
 
 if m == ["mix"]:
     rmsd_matrix = np.abs(rmsd_matrix) / np.max(rmsd_matrix)
     da_matrix = np.abs(da_matrix) / np.max(da_matrix)
     erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = da_matrix * erel_matrix * rmsd_matrix
+    A = da_matrix + erel_matrix + rmsd_matrix
 
 
 # Time to cluster after scaling the matrix. Scaling choice is not innocent.
@@ -103,7 +103,7 @@ if c == "affprop":
 # If requested, prune again based on average cluster energies
 
 if ewin is not None:
-    rejected = []
+    rejected = np.zeros((len(indices)))
     energies = [molecule.energy for molecule in molecules]
     if None in energies:
         raise InputError(
@@ -137,15 +137,16 @@ if ewin is not None:
                 print(
                     f"Removed selected conformer number {idx} due to energy threshold."
                 )
-            rejected.append(indices.pop(i))
+            rejected[i] = 1
 
-# Write the indices that were selected
+# Write the indices (representative molecules) that were accepted and rejected
 
-for i, idx in enumerate(indices):
-    molecules[idx].write(f"{basename}_selected_{i}")
-
-# Write the indices that were rejected
-
-if ewin is not None and rejected:
-    for i, idx in enumerate(rejected):
-        molecules[idx].write(f"{basename}_rejected_{i}")
+if ewin is not None:
+    for i, idx in enumerate(indices):
+        if rejected[i]:
+            molecules[idx].write(f"{basename}_rejected_{i}")
+        if not rejected[i]:
+            molecules[idx].write(f"{basename}_selected_{i}")
+else:
+    for i, idx in enumerate(indices):
+        molecules[idx].write(f"{basename}_selected_{i}")

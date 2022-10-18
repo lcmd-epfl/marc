@@ -19,17 +19,28 @@ def da_matrix(mols):
         (N,N) matrix
     """
     n = len(mols)
-    M = np.zeros((n, n))
+    M = np.ones((n, n))
     graphs = [mol.graph for mol in mols]
     refgraph = graphs[0]
+    natoms = len(mols[0].atoms)
+    if natoms > 4:
+        n_d = max(natoms // 4, 5)
+    else:
+        return M
     assert isinstance(refgraph, nx.Graph)
     coords = np.array([mol.coordinates for mol in mols])
     # All molecules share the same connectivity (at least in principle)
     bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
-    indices = sorted(range(len(bc)), key=lambda i: bc[i])[-4:]
+    all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
     for i in range(0, n - 1):
         for j in range(i + 1, n):
-            M[i, j] = M[j, i] = delta_dihedral(indices, coords[i], coords[j])
+            for d in range(n_d):
+                k = 4 * d
+                l = 4 * (d + 1)
+                indices = all_indices[k:l]
+                M[i, j] = M[j, i] = M[i, j] * delta_dihedral(
+                    indices, coords[i], coords[j]
+                )
     return M
 
 

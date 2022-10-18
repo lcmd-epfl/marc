@@ -32,7 +32,7 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
 
 
 def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
-    mds = MDS(dissimilarity="precomputed", n_components=2)
+    mds = MDS(dissimilarity="precomputed", n_components=2, n_init=50)
     x = mds.fit_transform(m)
     km = KMeans(n_clusters=n_clusters, n_init=50)
     cm = km.fit_predict(x)
