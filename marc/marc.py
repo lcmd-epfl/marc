@@ -6,12 +6,8 @@ import sys
 
 import numpy as np
 
-from .clustering import (
-    affprop_clustering,
-    agglomerative_clustering,
-    kmeans_clustering,
-    plot_dendrogram,
-)
+from .clustering import (affprop_clustering, agglomerative_clustering,
+                         kmeans_clustering, plot_dendrogram)
 from .da import da_matrix
 from .erel import erel_matrix
 from .exceptions import InputError
@@ -36,13 +32,12 @@ else:
 # Fill in molecule data
 l = len(molecules)
 if verb > 0:
+    if ewin is not None:
+        print(f"An energy window of {ewin} in energy units will be applied.")
     print(
         f"marc has detected {l} molecules in input, and will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
     )
-    if verb > 1 and ewin is not None:
-        print(
-            f"An energy window of {ewin} in energy units will be considered for the output conformers."
-        )
+
 
 # Generate the desired metric matrix
 if m in ["rmsd", "ewrmsd", "mix"]:
@@ -71,25 +66,15 @@ if m in ["da", "ewda", "mix"]:
 
 # Mix the metric matrices if desired
 if m == ["ewrmsd"]:
-    rmsd_matrix = np.abs(rmsd_matrix) / np.max(rmsd_matrix)
-    erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = rmsd_matrix + erel_matrix
+    A = rmsd_matrix * erel_matrix
 
 if m == ["ewrda"]:
-    da_matrix = np.abs(da_matrix) / np.max(da_matrix)
-    erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = da_matrix + erel_matrix
+    A = da_matrix * erel_matrix
 
 if m == ["mix"]:
-    rmsd_matrix = np.abs(rmsd_matrix) / np.max(rmsd_matrix)
-    da_matrix = np.abs(da_matrix) / np.max(da_matrix)
-    erel_matrix = np.abs(erel_matrix) / np.max(erel_matrix)
-    A = da_matrix + erel_matrix + rmsd_matrix
-
+    A = da_matrix * erel_matrix * rmsd_matrix
 
 # Time to cluster after scaling the matrix. Scaling choice is not innocent.
-
-A = np.abs(A) / np.max(A)
 
 if c == "kmeans":
     indices, clusters = kmeans_clustering(n_clusters, A, verb)

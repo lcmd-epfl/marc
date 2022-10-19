@@ -2,9 +2,10 @@
 
 import networkx as nx
 import numpy as np
+from sklearn.metrics.pairwise import pairwise_kernels
 
 
-def da_matrix(mols):
+def da_matrix(mols, normalize=True, kernel="rbf"):
     """
     Compute pairwise main dihedral matrix between all molecules in mols.
 
@@ -19,28 +20,33 @@ def da_matrix(mols):
         (N,N) matrix
     """
     n = len(mols)
-    M = np.ones((n, n))
     graphs = [mol.graph for mol in mols]
     refgraph = graphs[0]
     natoms = len(mols[0].atoms)
+    M = np.ones((n, n))
     if natoms > 4:
-        n_d = max(natoms // 4, 5)
+        n_d = max(natoms // 4, 10)
     else:
         return M
-    assert isinstance(refgraph, nx.Graph)
+    DA = np.zeros((n, n_d))
     coords = np.array([mol.coordinates for mol in mols])
+
     # All molecules share the same connectivity (at least in principle)
     bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
     all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
-    for i in range(0, n - 1):
-        for j in range(i + 1, n):
-            for d in range(n_d):
-                k = 4 * d
-                l = 4 * (d + 1)
-                indices = all_indices[k:l]
-                M[i, j] = M[j, i] = M[i, j] * delta_dihedral(
-                    indices, coords[i], coords[j]
-                )
+    for i in range(n):
+        for d in range(n_d - 1):
+            k = 4 * d
+            l = 4 * (d + 1)
+            indices = all_indices[k:l]
+            a0, a1, a2, a3 = coords[i][indices]
+            DA[i, d] = dihedral(a0, a1, a2, a3)
+    if kernel is "rbf":
+        euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
+        gamma_heuristic = 1 / (0.5 * euclid_0.std())
+        M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
+    else:
+        M -= pairwise_kernels(DA, DA, metric=kernel)
     return M
 
 

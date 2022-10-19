@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def erel_matrix(mols):
+def erel_matrix(mols, normalize=True):
     """
     Compute pairwise relative energy matrix between all molecules in mols.
 
@@ -22,4 +22,6 @@ def erel_matrix(mols):
     for i in range(0, n - 1):
         for j in range(i + 1, n):
             M[i, j] = M[j, i] = np.abs(energies[i] - energies[j])
+    if normalize:
+        M = np.abs(M) / np.max(M)
     return M

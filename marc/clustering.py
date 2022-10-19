@@ -8,7 +8,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
 from scipy.spatial.distance import euclidean, squareform
-from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
+from sklearn.cluster import (DBSCAN, AffinityPropagation,
+                             AgglomerativeClustering, KMeans)
 from sklearn.manifold import MDS
 from sklearn.neighbors import NearestCentroid
 
@@ -46,7 +47,6 @@ def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
     for iclust in range(u.size):
 
         # get all points assigned to each cluster:
-        cluster_pts = x[km.labels_ == iclust]
         clusters.append(np.where(km.labels_ == iclust)[0])
 
         # get all indices of points assigned to this cluster:

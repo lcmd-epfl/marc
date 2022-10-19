@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def rmsd_matrix(mols):
+def rmsd_matrix(mols, normalize=True):
     """
     Compute pairwise RMSD matrix between all molecules in mols.
 
@@ -22,6 +22,8 @@ def rmsd_matrix(mols):
     for i in range(0, n - 1):
         for j in range(i + 1, n):
             M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j])
+    if normalize:
+        M = np.abs(M) / np.max(M)
     return M
 
 
