@@ -215,7 +215,7 @@ def processargs(arguments):
             )
         try:
             energies = []
-            g = open(filename, "rb")
+            g = open(filename, "r")
             _RE_COMBINE_WHITESPACE = re.compile(r"\s+")
             for line in g.readlines():
                 trline = _RE_COMBINE_WHITESPACE.sub(" ", line).strip()
