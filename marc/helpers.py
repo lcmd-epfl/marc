@@ -219,8 +219,7 @@ def processargs(arguments):
             _RE_COMBINE_WHITESPACE = re.compile(r"\s+")
             for line in g.readlines():
                 trline = _RE_COMBINE_WHITESPACE.sub(" ", line).strip()
-                id = int(trline.split(" ")[0])
-                e = float(trline.split(" ")[0])
+                e = float(trline.split(" ")[1])
                 energies.append(e)
             g.close()
         except OSError:
