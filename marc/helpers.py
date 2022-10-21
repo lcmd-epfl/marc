@@ -117,7 +117,7 @@ def processargs(arguments):
         "--metric",
         dest="m",
         type=str,
-        default="ewrmsd",
+        default="mix",
         help="Metric to use to define distance. (default: mix)",
     )
     mbuilder.add_argument(
