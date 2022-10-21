@@ -125,9 +125,8 @@ def processargs(arguments):
         "--n",
         "--n_clusters",
         dest="n",
-        type=int,
-        default=10,
-        help="Number of representative conformers to select. (default: 10)",
+        default=None,
+        help="Number of representative conformers to select. (default: select using gap method)",
     )
     mbuilder.add_argument(
         "-ewin",
@@ -235,21 +234,29 @@ def processargs(arguments):
             print(
                 "Setting up energies from file. This will overwrite the energy values in the xyz files. Double check the ordering!"
             )
-        for molecule, energy in zip(molecules, energies):
-            molecule.energy == energy
+        if len(molecules) == len(energies):
+            for i, (molecule, energy) in enumerate(zip(molecules, energies)):
+                molecule.energy = energy
+                if args.verb > 1:
+                    print(f"Molecule {i} set with energy {energy}")
+        else:
+            raise InputError(
+                f"The number of molecules ({len(molecules)}) and energies ({len(energies)}) in file {filename} does not match. Exiting."
+            )
 
-    # Check for atom ordering
+    # Check for atom ordering and number
+    sort = False
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
         atoms_a = molecule_a.atoms
         atoms_b = molecule_b.atoms
-        if all(atoms_a == atoms_b):
-            continue
+        if len(atoms_a) == len(atoms_b):
+            if not all(atoms_a == atoms_b):
+                sort = True
         else:
-            if args.verb > 0:
-                print("Molecule geometries are not sorted.")
-            sort = True
-            break
-        sort = False
+            raise InputError("Molecules do not have the same number of atoms. Exiting.")
+        natoms = len(atoms_b)
+    if args.verb > 0 and sort:
+        print("Molecule geometries are not sorted.")
 
     # Check for isomorphism
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
@@ -264,6 +271,12 @@ def processargs(arguments):
             break
         isomorph = True
 
+    # Double check if energies are properly set
+    energies = [molecule.energy for molecule in molecules]
+    if None in energies:
+        if args.verb > 2:
+            print(f"Energies are: {energies}")
+
     if args.c not in ["kmeans", "agglomerative", "affprop"]:
         raise InputError("Unknown clustering strategy selected. Exiting.")
 
@@ -273,6 +286,7 @@ def processargs(arguments):
     return (
         basename,
         np.array(molecules, dtype=object),
+        natoms,
         args.c,
         args.m,
         args.n,

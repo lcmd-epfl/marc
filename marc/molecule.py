@@ -433,7 +433,7 @@ class Molecule:
             ds[i] = np.linalg.norm(
                 self.coordinates[edge[0]] - self.coordinates[edge[1]]
             )
-            cs[i] = self.atoms[edge[0]] * self.atoms[edge[1]]
+            cs[i] = self.atoms[edge[0]] * self.atoms[edge[1]] / ds[i] ** 2
         b_dict = nx.edge_betweenness_centrality(G, normalized=False)
         d_dict = {edge: d for edge, d in zip(b_dict.keys(), ds)}
         c_dict = {edge: c for edge, c in zip(b_dict.keys(), cs)}

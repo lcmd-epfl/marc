@@ -7,9 +7,9 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
+import scipy.cluster.vq
 from scipy.spatial.distance import euclidean, squareform
-from sklearn.cluster import (DBSCAN, AffinityPropagation,
-                             AgglomerativeClustering, KMeans)
+from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
 from sklearn.manifold import MDS
 from sklearn.neighbors import NearestCentroid
 
@@ -32,17 +32,29 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     plt.close()
 
 
-def kmeans_clustering(n_clusters: int, m: np.ndarray, verb=0):
-    mds = MDS(dissimilarity="precomputed", n_components=2, n_init=50)
+def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
+    mds = MDS(dissimilarity="precomputed", n_components=rank, n_init=50)
     x = mds.fit_transform(m)
+    if n_clusters is None:
+        nm = m.shape[0]
+        percentages = list(
+            set(
+                [
+                    min(max(int(nm * percentage), 2), 50)
+                    for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                ]
+            )
+        )
+        gaps = gap(x, nrefs=max(nm, 50), ks=percentages)
+        n_clusters = max(percentages[np.argmax(gaps)], 2)
     km = KMeans(n_clusters=n_clusters, n_init=50)
     cm = km.fit_predict(x)
     u, c = np.unique(cm, return_counts=True)
     closest_pt_idx = []
     clusters = []
-    if verb > 0:
+    if verb > 1:
         print(
-            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
+            f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
 
@@ -73,9 +85,9 @@ def affprop_clustering(m, verb=0):
     u, c = np.unique(cm, return_counts=True)
     closest_pt_idx = []
     clusters = []
-    if verb > 0:
+    if verb > 1:
         print(
-            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
+            f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
 
@@ -94,7 +106,21 @@ def affprop_clustering(m, verb=0):
     return closest_pt_idx, clusters
 
 
-def agglomerative_clustering(n_clusters: int, m: np.ndarray, verb=0):
+def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
+    if n_clusters is None:
+        mds = MDS(dissimilarity="precomputed", n_components=rank, n_init=50)
+        x = mds.fit_transform(m)
+        nm = m.shape[0]
+        percentages = list(
+            set(
+                [
+                    min(max(int(nm * percentage), 2), 50)
+                    for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                ]
+            )
+        )
+        gaps = gap(x, nrefs=max(nm, 50), ks=percentages)
+        n_clusters = max(percentages[np.argmax(gaps)], 2)
     m = np.ones_like(m) - m
     ac = AgglomerativeClustering(
         n_clusters=n_clusters, affinity="precomputed", linkage="single"
@@ -105,9 +131,9 @@ def agglomerative_clustering(n_clusters: int, m: np.ndarray, verb=0):
     u, c = np.unique(cm, return_counts=True)
     closest_pt_idx = []
     clusters = []
-    if verb > 0:
+    if verb > 1:
         print(
-            f"Unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
+            f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
 
@@ -130,3 +156,36 @@ def agglomerative_clustering(n_clusters: int, m: np.ndarray, verb=0):
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
     return closest_pt_idx, clusters
+
+
+def gap(data, refs=None, nrefs=20, ks=range(1, 11)):
+    shape = data.shape
+    if refs is None:
+        tops = data.max(axis=0)
+        bots = data.min(axis=0)
+        dists = scipy.matrix(scipy.diag(tops - bots))
+        rands = scipy.random.random_sample(size=(shape[0], shape[1], nrefs))
+        for i in range(nrefs):
+            rands[:, :, i] = rands[:, :, i] * dists + bots
+    else:
+        rands = refs
+    gaps = np.zeros((len(ks),))
+    for (i, k) in enumerate(ks):
+        # (kmc, kml) = scipy.cluster.vq.kmeans2(data, k)
+        km = KMeans(n_clusters=k, n_init=5)
+        cm = km.fit_predict(data)
+        kmc = km.cluster_centers_
+        kml = km.labels_
+        disp = sum([euclidean(data[m, :], kmc[kml[m], :]) for m in range(shape[0])])
+        refdisps = np.zeros((rands.shape[2],))
+        for j in range(rands.shape[2]):
+            # (kmc, kml) = scipy.cluster.vq.kmeans2(rands[:, :, j], k)
+            km = KMeans(n_clusters=k, n_init=5)
+            cm = km.fit_predict(rands[:, :, j])
+            kmc = km.cluster_centers_
+            kml = km.labels_
+            refdisps[j] = sum(
+                [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
+            )
+        gaps[i] = scipy.mean(scipy.log(refdisps)) - scipy.log(disp)
+    return gaps

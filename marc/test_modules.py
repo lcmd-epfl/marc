@@ -3,8 +3,12 @@
 import os
 
 from marc.helpers import test_molecules_from_file
-from marc.molecule import (test_compare_origin, test_molecule_from_file,
-                           test_molecule_from_lines, test_molecule_to_file)
+from marc.molecule import (
+    test_compare_origin,
+    test_molecule_from_file,
+    test_molecule_from_lines,
+    test_molecule_to_file,
+)
 
 test_files_dir = f"{os.path.dirname(os.path.abspath(__file__))}/test_files/"
 

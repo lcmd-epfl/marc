@@ -6,8 +6,12 @@ import sys
 
 import numpy as np
 
-from .clustering import (affprop_clustering, agglomerative_clustering,
-                         kmeans_clustering, plot_dendrogram)
+from .clustering import (
+    affprop_clustering,
+    agglomerative_clustering,
+    kmeans_clustering,
+    plot_dendrogram,
+)
 from .da import da_matrix
 from .erel import erel_matrix
 from .exceptions import InputError
@@ -19,6 +23,7 @@ if __name__ == "__main__" or __name__ == "marc.marc":
     (
         basename,
         molecules,
+        natoms,
         c,
         m,
         n_clusters,
@@ -34,9 +39,14 @@ l = len(molecules)
 if verb > 0:
     if ewin is not None:
         print(f"An energy window of {ewin} in energy units will be applied.")
-    print(
-        f"marc has detected {l} molecules in input, and will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
-    )
+    if n_clusters is not None:
+        print(
+            f"marc has detected {l} molecules in input, and will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
+        )
+    elif n_clusters is None:
+        print(
+            f"marc has detected {l} molecules in input, and will automatically select a set of representative conformers using {c} clustering and {m} as metric."
+        )
 
 
 # Generate the desired metric matrix
@@ -49,6 +59,8 @@ if m in ["rmsd", "ewrmsd", "mix"]:
 if m in ["erel", "ewrmsd", "ewda", "mix"]:
     energies = [molecule.energy for molecule in molecules]
     if None in energies:
+        if verb > 2:
+            print(f"Energies are: {energies}")
         raise InputError(
             """One or more molecules do not have an associated energy. Cannot use
              energy metrics. Exiting."""
@@ -77,10 +89,10 @@ if m == ["mix"]:
 # Time to cluster after scaling the matrix. Scaling choice is not innocent.
 
 if c == "kmeans":
-    indices, clusters = kmeans_clustering(n_clusters, A, verb)
+    indices, clusters = kmeans_clustering(n_clusters, A, natoms, verb)
 
 if c == "agglomerative":
-    indices, clusters = agglomerative_clustering(n_clusters, A, verb)
+    indices, clusters = agglomerative_clustering(n_clusters, A, natoms, verb)
 
 if c == "affprop":
     indices, clusters = affprop_clustering(A, verb)
@@ -91,6 +103,8 @@ if ewin is not None:
     rejected = np.zeros((len(indices)))
     energies = [molecule.energy for molecule in molecules]
     if None in energies:
+        if verb > 2:
+            print(f"Energies are: {energies}")
         raise InputError(
             """One or more molecules do not have an associated energy. Cannot use
              energy metrics. Exiting."""
@@ -129,9 +143,9 @@ if ewin is not None:
 if ewin is not None:
     for i, idx in enumerate(indices):
         if rejected[i]:
-            molecules[idx].write(f"{basename}_rejected_{i}")
+            molecules[idx].write(f"{basename}_rejected_{idx}")
         if not rejected[i]:
-            molecules[idx].write(f"{basename}_selected_{i}")
+            molecules[idx].write(f"{basename}_selected_{idx}")
 else:
     for i, idx in enumerate(indices):
-        molecules[idx].write(f"{basename}_selected_{i}")
+        molecules[idx].write(f"{basename}_selected_{idx}")

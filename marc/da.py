@@ -38,8 +38,7 @@ def da_matrix(mols, normalize=True, kernel="rbf"):
         for d in range(n_d - 1):
             k = 4 * d
             l = 4 * (d + 1)
-            indices = all_indices[k:l]
-            a0, a1, a2, a3 = coords[i][indices]
+            a0, a1, a2, a3 = coords[i][all_indices[k:l]]
             DA[i, d] = dihedral(a0, a1, a2, a3)
     if kernel is "rbf":
         euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
