@@ -19,7 +19,6 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
         print(f"Max pairwise {label}: {np.max(m)} in {label} units.")
         if verb > 2:
             print(f"Distance matrix is:\n {m}")
-    assert np.all(m - m.T < 1e-6)
     reduced_distances = squareform(m, force="tovector")
     linkage = scipy.cluster.hierarchy.linkage(reduced_distances, method="single")
     plt.title(f"{label} average linkage hierarchical clustering")
