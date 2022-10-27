@@ -256,7 +256,7 @@ def processargs(arguments):
             raise InputError("Molecules do not have the same number of atoms. Exiting.")
         natoms = len(atoms_b)
     if args.verb > 0 and sort:
-        print("Molecule geometries are not sorted.")
+        print("Warning! Molecule geometries are not sorted.")
 
     # Check for isomorphism
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
@@ -266,7 +266,7 @@ def processargs(arguments):
             continue
         else:
             if args.verb > 0:
-                print("Molecule topologies are not isomorphic.")
+                print("Warning! Molecule topologies are not isomorphic.")
             isomorph = False
             break
         isomorph = True
@@ -277,11 +277,28 @@ def processargs(arguments):
         if args.verb > 2:
             print(f"Energies are: {energies}")
 
-    if args.c not in ["kmeans", "agglomerative", "affprop"]:
-        raise InputError("Unknown clustering strategy selected. Exiting.")
+    # Check input args typing/values
+    valid_c = ["kmeans", "agglomerative", "affprop"]
+    if args.c not in valid_c:
+        raise InputError(
+            f"Unknown clustering algorithm selected. Valid algorithms are:\n {valid_c}\n Exiting."
+        )
 
-    if args.m not in ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]:
-        raise InputError("Unknown metric for clustering selected. Exiting.")
+    valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
+    if args.m not in valid_m:
+        raise InputError(
+            f"Unknown metric for clustering selected. Valid metrics are:\n {valid_m}\n Exiting."
+        )
+
+    if args.n is not None:
+        try:
+            n = int(args.n)
+        except ValueError:
+            raise InputError(
+                f"n must be an integer or None, but {n} was provided. Exiting."
+            )
+    else:
+        n = None
 
     return (
         basename,
@@ -289,7 +306,7 @@ def processargs(arguments):
         natoms,
         args.c,
         args.m,
-        args.n,
+        n,
         ewin,
         args.plotmode,
         args.verb,
