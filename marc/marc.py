@@ -37,16 +37,16 @@ else:
 # Fill in molecule data
 l = len(molecules)
 if verb > 0:
-    if ewin is not None:
-        print(f"An energy window of {ewin} in energy units will be applied.")
     if n_clusters is not None:
         print(
-            f"marc has detected {l} molecules in input, and will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
+            f"marc has detected {l} molecules in input.\n Will select {n_clusters} most representative conformers using {c} clustering and {m} as metric."
         )
     elif n_clusters is None:
         print(
-            f"marc has detected {l} molecules in input, and will automatically select a set of representative conformers using {c} clustering and {m} as metric."
+            f"marc has detected {l} molecules in input.\n Will automatically select a set of representative conformers using {c} clustering and {m} as metric."
         )
+    if ewin is not None:
+        print(f"An energy window of {ewin} in energy units will be applied.")
 
 
 # Generate the desired metric matrix
