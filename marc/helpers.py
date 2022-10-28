@@ -12,6 +12,9 @@ from marc.exceptions import InputError
 from marc.molecule import Molecule
 
 
+valid_c = ["kmeans", "agglomerative", "affprop"]
+valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
+
 def yesno(question):
     """Simple Yes/No Function."""
     prompt = f"{question} ? (y/n): "
@@ -108,7 +111,7 @@ def processargs(arguments):
         dest="c",
         type=str,
         default="kmeans",
-        help="Clustering algorithms to use. (default: kmeans)",
+        help=f"Clustering algorithms to use. (default: kmeans)\nPossible values are: {valid_c}",
     )
     mbuilder.add_argument(
         "-m",
@@ -118,7 +121,7 @@ def processargs(arguments):
         dest="m",
         type=str,
         default="mix",
-        help="Metric to use to define distance. (default: mix)",
+        help=f"Metric to use to define distance. (default: mix)\nPossible values are: {valid_m}",
     )
     mbuilder.add_argument(
         "-n",
@@ -159,7 +162,7 @@ def processargs(arguments):
         dest="plotmode",
         type=int,
         default=1,
-        help="Plotting mode. Higher is more detailed, lower is more basic. (default: 1)",
+        help="Plotting mode. Set to more than 1 to generate agglomerative dendrograms. (default: 1)",
     )
     args = mbuilder.parse_args(arguments)
 
@@ -278,13 +281,11 @@ def processargs(arguments):
             print(f"Energies are: {energies}")
 
     # Check input args typing/values
-    valid_c = ["kmeans", "agglomerative", "affprop"]
     if args.c not in valid_c:
         raise InputError(
             f"Unknown clustering algorithm selected. Valid algorithms are:\n {valid_c}\n Exiting."
         )
 
-    valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
     if args.m not in valid_m:
         raise InputError(
             f"Unknown metric for clustering selected. Valid metrics are:\n {valid_m}\n Exiting."
