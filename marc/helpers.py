@@ -136,6 +136,14 @@ def processargs(arguments):
         help="If set to a float, energy window for conformers to be accepted. (default: None)",
     )
     mbuilder.add_argument(
+        "-mine",
+        "--mine",
+        dest="mine",
+        action="store_true",
+        default=False,
+        help="If set, the minimum energy conformer per sample will be taken. (default: False)",
+    )
+    mbuilder.add_argument(
         "-efile",
         "--efile",
         dest="efile",
@@ -316,6 +324,7 @@ def processargs(arguments):
         args.m,
         n,
         ewin,
+        args.mine,
         args.plotmode,
         args.verb,
     )

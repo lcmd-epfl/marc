@@ -28,6 +28,7 @@ if __name__ == "__main__" or __name__ == "marc.marc":
         m,
         n_clusters,
         ewin,
+        mine,
         plotmode,
         verb,
     ) = processargs(sys.argv[1:])
@@ -97,6 +98,29 @@ if c == "agglomerative":
 if c == "affprop":
     indices, clusters = affprop_clustering(A, verb)
 
+# Resample clusters based on energies if requested
+
+if mine:
+    if None in energies:
+        if verb > 2:
+            print(f"Energies are: {energies}")
+        raise InputError(
+            """One or more molecules do not have an associated energy. Cannot use
+             the mine option. Exiting."""
+        )
+    for i, (index, cluster) in enumerate(zip(indices, clusters)):
+        if verb > 2:
+            print(
+                f"Resampling {list(cluster)} for which representative {indices[i]} has been selected."
+            )
+        idx_mine = cluster[
+            np.argmin(np.array([energies[j] for j in cluster], dtype=float))
+        ]
+        if index != idx_mine:
+            if verb > 2:
+                print(f"Minimal energy representative {idx_mine} was selected instead.")
+            indices[i] = idx_mine
+
 # If requested, prune again based on average cluster energies
 
 if ewin is not None:
@@ -107,7 +131,7 @@ if ewin is not None:
             print(f"Energies are: {energies}")
         raise InputError(
             """One or more molecules do not have an associated energy. Cannot use
-             energy metrics. Exiting."""
+             the ewin option. Exiting."""
         )
     avgs = np.zeros(len(clusters), dtype=float)
     stds = np.zeros(len(clusters), dtype=float)
