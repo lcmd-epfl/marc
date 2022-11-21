@@ -23,7 +23,7 @@ if __name__ == "__main__" or __name__ == "marc.marc":
     (
         basename,
         molecules,
-        natoms,
+        dof,
         c,
         m,
         n_clusters,
@@ -51,9 +51,9 @@ if verb > 0:
 
 # Generate the desired metric matrix
 if m in ["rmsd", "ewrmsd", "mix"]:
-    rmsd_matrix = rmsd_matrix(molecules)
+    rmsd_matrix, max = rmsd_matrix(molecules)
     if plotmode > 1:
-        plot_dendrogram(rmsd_matrix, "RMSD", verb)
+        plot_dendrogram(rmsd_matrix * max, "RMSD", verb)
     A = rmsd_matrix
 
 if m in ["erel", "ewrmsd", "ewda", "mix"]:
@@ -65,9 +65,9 @@ if m in ["erel", "ewrmsd", "ewda", "mix"]:
             """One or more molecules do not have an associated energy. Cannot use
              energy metrics. Exiting."""
         )
-    erel_matrix = erel_matrix(molecules)
+    erel_matrix, max = erel_matrix(molecules)
     if plotmode > 1:
-        plot_dendrogram(erel_matrix, "E_{rel}", verb)
+        plot_dendrogram(erel_matrix * max, "E_rel", verb)
     A = erel_matrix
 
 if m in ["da", "ewda", "mix"]:
@@ -89,10 +89,10 @@ if m == ["mix"]:
 # Time to cluster after scaling the matrix. Scaling choice is not innocent.
 
 if c == "kmeans":
-    indices, clusters = kmeans_clustering(n_clusters, A, natoms, verb)
+    indices, clusters = kmeans_clustering(n_clusters, A, dof, verb)
 
 if c == "agglomerative":
-    indices, clusters = agglomerative_clustering(n_clusters, A, natoms, verb)
+    indices, clusters = agglomerative_clustering(n_clusters, A, dof, verb)
 
 if c == "affprop":
     indices, clusters = affprop_clustering(A, verb)
@@ -143,9 +143,9 @@ if ewin is not None:
 if ewin is not None:
     for i, idx in enumerate(indices):
         if rejected[i]:
-            molecules[idx].write(f"{basename}_rejected_{idx}")
+            molecules[idx].write(f"{basename}_rejected_{idx:02}")
         if not rejected[i]:
-            molecules[idx].write(f"{basename}_selected_{idx}")
+            molecules[idx].write(f"{basename}_selected_{idx:02}")
 else:
     for i, idx in enumerate(indices):
-        molecules[idx].write(f"{basename}_selected_{idx}")
+        molecules[idx].write(f"{basename}_selected_{idx:02}")

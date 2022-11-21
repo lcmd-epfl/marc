@@ -36,15 +36,17 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
     x = mds.fit_transform(m)
     if n_clusters is None:
         nm = m.shape[0]
-        percentages = list(
-            set(
-                [
-                    min(max(int(nm * percentage), 2), 50)
-                    for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
-                ]
+        percentages = sorted(
+            list(
+                set(
+                    [
+                        min(max(int(nm * percentage), 2), 50)
+                        for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                    ]
+                )
             )
         )
-        gaps = gap(x, nrefs=max(nm, 50), ks=percentages, verb=verb)
+        gaps = gap(x, nrefs=min(nm, 50), ks=percentages, verb=verb)
         n_clusters = max(percentages[np.argmax(gaps)], 2)
     km = KMeans(n_clusters=n_clusters, n_init=100)
     cm = km.fit_predict(x)
@@ -110,12 +112,14 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
         mds = MDS(dissimilarity="precomputed", n_components=rank, n_init=100)
         x = mds.fit_transform(m)
         nm = m.shape[0]
-        percentages = list(
-            set(
-                [
-                    min(max(int(nm * percentage), 2), 50)
-                    for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
-                ]
+        percentages = sorted(
+            list(
+                set(
+                    [
+                        min(max(int(nm * percentage), 2), 50)
+                        for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                    ]
+                )
             )
         )
         gaps = gap(x, nrefs=max(nm, 50), ks=percentages, verb=verb)
@@ -163,14 +167,13 @@ def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
         tops = data.max(axis=0)
         bots = data.min(axis=0)
         dists = scipy.matrix(scipy.diag(tops - bots))
-        rands = scipy.random.random_sample(size=(shape[0], shape[1], nrefs))
+        rands = np.random.random_sample(size=(shape[0], shape[1], nrefs))
         for i in range(nrefs):
             rands[:, :, i] = rands[:, :, i] * dists + bots
     else:
         rands = refs
     gaps = np.zeros((len(ks),))
     for (i, k) in enumerate(ks):
-        # (kmc, kml) = scipy.cluster.vq.kmeans2(data, k)
         km = KMeans(n_clusters=k, n_init=5)
         cm = km.fit_predict(data)
         kmc = km.cluster_centers_
@@ -178,7 +181,6 @@ def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
         disp = sum([euclidean(data[m, :], kmc[kml[m], :]) for m in range(shape[0])])
         refdisps = np.zeros((rands.shape[2],))
         for j in range(rands.shape[2]):
-            # (kmc, kml) = scipy.cluster.vq.kmeans2(rands[:, :, j], k)
             km = KMeans(n_clusters=k, n_init=5)
             cm = km.fit_predict(rands[:, :, j])
             kmc = km.cluster_centers_
@@ -187,6 +189,6 @@ def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
                 [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
             )
         gaps[i] = scipy.mean(scipy.log(refdisps)) - scipy.log(disp)
-        if verb > 1:
+        if verb > 2:
             print(f"Gaps for k-values {ks} : {gaps}")
     return gaps

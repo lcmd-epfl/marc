@@ -25,7 +25,7 @@ def da_matrix(mols, normalize=True, kernel="rbf"):
     natoms = len(mols[0].atoms)
     M = np.ones((n, n))
     if natoms > 4:
-        n_d = max(natoms // 4, 10)
+        n_d = max(natoms // 4, 2)
     else:
         return M
     DA = np.zeros((n, n_d))
@@ -46,7 +46,7 @@ def da_matrix(mols, normalize=True, kernel="rbf"):
         M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
     else:
         M -= pairwise_kernels(DA, DA, metric=kernel)
-    return M
+    return np.tril(M) + np.triu(M.T, 1)
 
 
 def delta_dihedral(indices, P, Q):

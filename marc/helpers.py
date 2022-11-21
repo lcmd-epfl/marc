@@ -255,6 +255,14 @@ def processargs(arguments):
         else:
             raise InputError("Molecules do not have the same number of atoms. Exiting.")
         natoms = len(atoms_b)
+        if natoms == 1:
+            raise InputError("Molecules are monoatomic. Exiting.")
+        elif natoms == 2:
+            dof = 1
+        else:
+            dof = 3 * len(atoms_b) - 6
+        if not dof > 0:
+            raise InputError("Molecules have less than 1 degree of freedom. Exiting.")
     if args.verb > 0 and sort:
         print("Warning! Molecule geometries are not sorted.")
 
@@ -303,7 +311,7 @@ def processargs(arguments):
     return (
         basename,
         np.array(molecules, dtype=object),
-        natoms,
+        dof,
         args.c,
         args.m,
         n,
