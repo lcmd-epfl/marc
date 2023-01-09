@@ -303,7 +303,7 @@ class Molecule:
         title = f.readline().strip()
         if "energy:" in title:
             try:
-                etitle = title.split("energy:")[1]
+                etitle = title.split(":")[1].split(" ")[1]
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
@@ -369,10 +369,10 @@ class Molecule:
             )
 
         # The title line may contain an energy
-        title = f.readline().strip()
+        title = next(lines_iter).strip()
         if "energy:" in title:
             try:
-                etitle = title.split("energy:")[1]
+                etitle = title.split(":")[1].split(" ")[1]
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
