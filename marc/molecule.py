@@ -301,10 +301,17 @@ class Molecule:
 
         # The title line may contain an energy
         title = f.readline().strip()
-        try:
-            energy = float(title) * ha_to_kcalmol
-        except ValueError:
-            energy = None
+        if "energy:" in title:
+            try:
+                etitle = title.split("energy:")[1]
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+        else:
+            try:
+                energy = float(title) * ha_to_kcalmol
+            except ValueError:
+                energy = None
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(f):
@@ -362,11 +369,18 @@ class Molecule:
             )
 
         # The title line may contain an energy
-        title = next(lines_iter).strip()
-        try:
-            energy = float(title) * ha_to_kcalmol
-        except ValueError:
-            energy = None
+        title = f.readline().strip()
+        if "energy:" in title:
+            try:
+                etitle = title.split("energy:")[1]
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+        else:
+            try:
+                energy = float(title) * ha_to_kcalmol
+            except ValueError:
+                energy = None
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(lines_iter):

@@ -54,7 +54,7 @@ However, sorting conformers accurately requires high quality energy computations
 - Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag.
 - Proceed iteratively, helping the user select non-redundant conformers than can then be refined with a higher level and fed back to marc.
 
-The default clustering metric used in marc is the `"ewrmsd"` distance, which measures pairwise similarity based on heavy-atom rmsd times the energy difference. The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy. Other possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule) and `"mix"` (combining geometry, dihedrals and energy).  
+The default clustering metric used in marc is the `"mix"` distance, which measures pairwise similarity based on heavy-atom rmsd times the energy difference times the kernel of the most relevant dihedral angles. The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy).  
 
 ## Examples [↑](#examples)
 
