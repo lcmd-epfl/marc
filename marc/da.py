@@ -52,7 +52,7 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
             for d in range(n_d - 1):
                 k = 4 * d
                 l = 4 * (d + 1)
-                a0, a1, a2, a3 = coords[i][all_indices[k:l]]
+                a0, a1, a2, a3 = coords[i][dfs_nodes[k:l]]
                 DA[i, d] = dihedral(a0, a1, a2, a3)
     else:
         return M
