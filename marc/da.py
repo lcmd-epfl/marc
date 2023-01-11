@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics.pairwise import pairwise_kernels
 
 
-def da_matrix(mols, normalize=True, kernel="rbf", mode="auto"):
+def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     """
     Compute pairwise main dihedral matrix between all molecules in mols.
 
@@ -53,7 +53,8 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="auto"):
                 l = 4 * (d + 1)
                 a0, a1, a2, a3 = coords[i][all_indices[k:l]]
                 DA[i, d] = dihedral(a0, a1, a2, a3)
-
+    else:
+        return M
     # Now generate a kernel based on the dihedrals
     if kernel is "rbf":
         euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
