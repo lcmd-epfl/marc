@@ -72,7 +72,7 @@ if m in ["erel", "ewrmsd", "ewda", "mix"]:
     A = erel_matrix
 
 if m in ["da", "ewda", "mix"]:
-    da_matrix = da_matrix(molecules)
+    da_matrix = da_matrix(molecules, mode="bfs")
     if plotmode > 1:
         plot_dendrogram(da_matrix, "Dihedral", verb)
     A = da_matrix
