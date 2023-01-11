@@ -45,7 +45,8 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="auto"):
                 a0, a1, a2, a3 = coords[i][all_indices[k:l]]
                 DA[i, d] = dihedral(a0, a1, a2, a3)
     elif mode == "dfs":
-        dfs_nodes = nx.bfs_preorder_nodes(refgraph, source=0)
+        dfs_nodes = list(nx.bfs_preorder_nodes(refgraph, source=0))
+        n_d = max(len(dfs_nodes) // 4, 1)
         for i in dfs_nodes:
             for d in range(n_d - 1):
                 k = 4 * d
