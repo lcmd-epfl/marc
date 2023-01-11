@@ -34,7 +34,8 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     DA = np.zeros((n, n_d))
     coords = np.array([mol.coordinates for mol in mols])
 
-    # All molecules share the same connectivity (at least in principle), traverse the graph and collect dihedrals
+    # All molecules share the same connectivity (at least in principle)
+    # Lets traverse the graph and collect dihedrals
     if mode == "auto":
         bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
         all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
@@ -45,7 +46,7 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
                 a0, a1, a2, a3 = coords[i][all_indices[k:l]]
                 DA[i, d] = dihedral(a0, a1, a2, a3)
     elif mode == "dfs":
-        dfs_nodes = list(nx.bfs_preorder_nodes(refgraph, source=0))
+        dfs_nodes = list(nx.dfs_preorder_nodes(refgraph, source=0))
         n_d = max(len(dfs_nodes) // 4, 1)
         for i in dfs_nodes:
             for d in range(n_d - 1):
