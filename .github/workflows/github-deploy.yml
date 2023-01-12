@@ -24,8 +24,8 @@ jobs:
       - uses: actions/setup-python@v3
 
       - name: Build wheels
-      - uses: pypa/cibuildwheel@v2.11.4
-        env:
+          uses: pypa/cibuildwheel@v2.11.4
+          env:
           CIBW_ARCHS_WINDOWS: AMD64
           CIBW_ARCHS_MACOS: x86_64
           CIBW_ARCHS_LINUX: "x86_64 aarch64"
