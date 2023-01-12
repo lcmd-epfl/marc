@@ -20,7 +20,14 @@ setup(
     url="https://github.com/lcmd-epfl/marc/",
     keywords=["compchem"],
     classifiers=["Programming Language :: Python :: 3"],
-    install_requires=["numpy", "scipy", "matplotlib"],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib",
+        "networkx",
+        "scikit-learn",
+        "setuptools",
+    ],
     include_package_data=True,
     entry_points={
         "console_scripts": [
