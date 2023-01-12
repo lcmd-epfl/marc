@@ -10,7 +10,7 @@ with io.open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="marc",
-    packages=["marc"],
+    packages=["navicat_marc"],
     version="1.0",
     description="Modular Analysis of Representative Conformers",
     long_description=long_description,
