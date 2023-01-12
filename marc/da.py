@@ -48,7 +48,7 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     elif mode == "dfs":
         dfs_nodes = list(nx.dfs_preorder_nodes(refgraph, source=0))
         n_d = max(len(dfs_nodes) // 4, 1)
-        for i in dfs_nodes:
+        for i in range(n):
             for d in range(n_d - 1):
                 k = 4 * d
                 l = 4 * (d + 1)
