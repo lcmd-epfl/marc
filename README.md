@@ -25,7 +25,7 @@ The code runs on pure python with the following dependencies:
 Download and add marc.py to your path. No strings attached. Run as:
 
 ```python
-python marc.py [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python marc.py [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 You can also execute:
@@ -37,7 +37,7 @@ python setup.py install
 to install marc as a python module. Afterwards, you can call marc as:
 
 ```python 
-python -m marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python -m marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Options can be consulted using the `-h` flag in either case. The help menu is quite detailed. 
@@ -48,7 +48,7 @@ Note that the main functions are all exposed and called directly in sequential o
 
 Several strategies are available for the generation of conformational ensembles. Typically, one then needs to sort the ensemble and proceed with the study of the most energetically favored conformers, which will be the most accesible thermodynamically following a Boltzmann distribution.
 
-However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Hence, marc provides a convenient way of accomplishing two goals:
+However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Hence, marc provides a convenient way of accomplishing three goals:
 
 - Select a handful of conformers that are representative of the diversity of the conformational ensemble using combined metrics.
 - Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag.
@@ -68,10 +68,13 @@ Options can be consulted with the `-h` flag.
 
 The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking, can be provided in atomic units in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in any units. The energy window specified in the `ewin` command line argument should be in the same units (typically, kcal/mol, as in the CREST output).
 
+Note that, by default, marc will select the most representative conformer out of every cluster. If you can provide energy values that you trust strongly, the `mine` flag will ensure that the lowest energy conformer of every cluster is selected.
+
 The output of marc are `n` selected xyz files which will be called `INPUT_selected_n.xyz` in the runtime directory. Conformers discarded by the `ewin` threshold will be printed with the `rejected` appendix instead.
 
 High verbosity levels (`-v 1`, `-v 2`, etc.) will print significantly more information while marc runs. To be as automated as possible, reasonable default values are set for most choices.
 
+As a final note, marc does not consider hydrogen atoms for geometry analysis. You can force marc to include them by using the `yesh` flag.
 
 ## Citation [↑](#citation)
 
