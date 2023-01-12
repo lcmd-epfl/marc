@@ -144,6 +144,14 @@ def processargs(arguments):
         help="If set, the minimum energy conformer per sample will be taken. (default: False)",
     )
     mbuilder.add_argument(
+        "-yesh",
+        "--yesh",
+        dest="noh",
+        action="store_false",
+        default=True,
+        help="If set, hydrogen atoms will be considered for all RMSD and dihedral angle computations. (default: ignore hydrogens)",
+    )
+    mbuilder.add_argument(
         "-efile",
         "--efile",
         dest="efile",
@@ -179,7 +187,7 @@ def processargs(arguments):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i) for i in filenames]
+        molecules = [Molecule(filename=i, noh=noh) for i in filenames]
 
     # This is left as a hook, but should basically never trigger due to argparse
     elif len(args.input) == 0:
@@ -190,13 +198,13 @@ def processargs(arguments):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i) for i in filenames]
+        molecules = [Molecule(filename=i, noh=noh) for i in filenames]
 
     else:
         basename = args.input[0].split("/")[-1].split(".")[0]
         termination = args.input[0][-3:]
         if termination == "xyz":
-            molecules = molecules_from_file(args.input[0])
+            molecules = molecules_from_file(args.input[0], noh=noh)
         else:
             raise InputError(
                 f"File with {termination} instead of xyz termination fed as input. Exiting."
