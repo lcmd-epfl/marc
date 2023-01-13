@@ -11,7 +11,5 @@ if __package__ == "":
     path = os.path.dirname(os.path.dirname(__file__))
     sys.path.insert(0, path)
 
-from navicat_marc import marc
-
 if __name__ == "__main__":
     sys.exit()
