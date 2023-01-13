@@ -2,8 +2,8 @@
 
 import os
 
-from navicat-marc.helpers import test_molecules_from_file
-from navicat-marc.molecule import (
+from navicat_marc.helpers import test_molecules_from_file
+from navicat_marc.molecule import (
     test_compare_origin,
     test_molecule_from_file,
     test_molecule_from_lines,

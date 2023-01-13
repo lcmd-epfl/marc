@@ -19,7 +19,7 @@ from .helpers import processargs
 from .molecule import Molecule
 from .rmsd import rmsd_matrix
 
-if __name__ == "__main__" or __name__ == "navicat-marc.marc":
+if __name__ == "__main__" or __name__ == "navicat_marc.marc":
     (
         basename,
         molecules,
