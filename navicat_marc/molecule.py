@@ -484,7 +484,7 @@ class Molecule:
 
 from os.path import dirname
 
-def test_compare_origin(path=f"{dirname(__file__))}/test_files/"):
+def test_compare_origin(path=f"{dirname(__file__)}/test_files/"):
     chunk_a = [
         "19",
         "(2S)-2-Amino-3-methylbutanoic acid",
@@ -602,7 +602,7 @@ def test_molecule_from_lines():
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_from_file(path=f"{dirname(__file__))}/test_files/"):
+def test_molecule_from_file(path=f"{dirname(__file__)}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
@@ -615,7 +615,7 @@ def test_molecule_from_file(path=f"{dirname(__file__))}/test_files/"):
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_to_file(path=f"{dirname(__file__))}/test_files/"):
+def test_molecule_to_file(path=f"{dirname(__file__)}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
