@@ -1,4 +1,4 @@
-marc: modular Analysis of Representative Conformers
+navicat-marc: modular Analysis of Representative Conformers
 ==============================================
 <!-- zenodo badge will go here -->
 
@@ -22,7 +22,19 @@ The code runs on pure python with the following dependencies:
 
 ## Install [↑](#install)
 
-Download and add marc.py to your path. No strings attached. Run as:
+You can install marc using pip:
+
+```python
+pip install navicat-marc
+```
+
+Afterwards, you can call marc as:
+
+```python 
+python -m navicat-marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+```
+
+Alternatively, you can download and add marc.py to your path. No strings attached. Run as:
 
 ```python
 python marc.py [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
@@ -34,10 +46,10 @@ You can also execute:
 python setup.py install
 ```
 
-to install marc as a python module. Afterwards, you can call marc as:
+after downloading to install marc as a python module. Afterwards, you can call marc as:
 
 ```python 
-python -m marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python -m navicat-marc [-h] [-version] -i [INPUT] [-c C] [-m M] [-n N] [-ewin EWIN] [-mine] [-yesh] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Options can be consulted using the `-h` flag in either case. The help menu is quite detailed. 
