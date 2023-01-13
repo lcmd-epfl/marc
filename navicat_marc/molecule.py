@@ -483,7 +483,7 @@ class Molecule:
             yield value
 
 
-def test_compare_origin(path="./test_files/"):
+def test_compare_origin(path=f"{__file__}/test_files/"):
     chunk_a = [
         "19",
         "(2S)-2-Amino-3-methylbutanoic acid",
@@ -601,7 +601,7 @@ def test_molecule_from_lines():
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_from_file(path="./test_files/"):
+def test_molecule_from_file(path=f"{__file__}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
@@ -614,7 +614,7 @@ def test_molecule_from_file(path="./test_files/"):
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_to_file(path="./test_files/"):
+def test_molecule_to_file(path=f"{__file__}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
