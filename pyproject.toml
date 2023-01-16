@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "navicat-marc"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   { name="R. Laplaza", email="rlaplaza@duck.com" },
 ]
@@ -27,4 +27,4 @@ classifiers = [
 ]
 
 [project.scripts]
-navicat_marc = "navicat_marc.marc:main"
+navicat_marc = "navicat_marc.marc:run_marc"
