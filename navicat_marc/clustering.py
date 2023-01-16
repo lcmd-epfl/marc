@@ -40,8 +40,8 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
             list(
                 set(
                     [
-                        min(max(int(nm * percentage), 2), 50)
-                        for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                        min(max(int(nm * percentage), 2), nm - 1)
+                        for percentage in [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
                     ]
                 )
             )

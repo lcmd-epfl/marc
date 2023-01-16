@@ -12,6 +12,17 @@ from navicat_marc.exceptions import InputError
 from navicat_marc.molecule import Molecule
 
 
+def long_substr(data):
+    """Longest common substring for basename elucidation."""
+    substr = ""
+    if len(data) > 1 and len(data[0]) > 0:
+        for i in range(len(data[0])):
+            for j in range(len(data[0]) - i + 1):
+                if j > len(substr) and all(data[0][i : i + j] in x for x in data):
+                    substr = data[0][i : i + j]
+    return substr
+
+
 def yesno(question):
     """Simple Yes/No Function."""
     prompt = f"{question} ? (y/n): "
@@ -94,7 +105,7 @@ def processargs(arguments):
         "--i",
         "-input",
         dest="input",
-        nargs="?",
+        nargs="+",
         action="append",
         type=str,
         required=True,
@@ -133,7 +144,7 @@ def processargs(arguments):
         "--ewin",
         dest="ewin",
         default=None,
-        help="If set to a float, energy window for conformers to be accepted. (default: None)",
+        help="If set to a float, energy window for conformers to be accepted in kcal/mol. (default: None)",
     )
     mbuilder.add_argument(
         "-mine",
@@ -141,7 +152,7 @@ def processargs(arguments):
         dest="mine",
         action="store_true",
         default=False,
-        help="If set, the minimum energy conformer per sample will be taken. (default: False)",
+        help="If set, the minimum energy conformer per sample will be taken instead of the centermost one. (default: False)",
     )
     mbuilder.add_argument(
         "-yesh",
@@ -179,32 +190,34 @@ def processargs(arguments):
     )
     args = mbuilder.parse_args(arguments)
 
-    if len(args.input) > 1:
-        filenames = args.input
-        terminations = [i[-3:] for i in filenames]
-        basename = filenames[0].split("/")[-1].split(".")[0]
-        if not all(terminations == "xyz"):
+    input_list = [item for sublist in args.input for item in sublist]
+    if args.verb > 2:
+        print(f"Input files are {input_list}.")
+    if len(input_list) > 1:
+        terminations = list(set([i[-3:] for i in input_list]))
+        basename = long_substr([filename.split("/")[-1] for filename in input_list])
+        if len(terminations) > 1 or terminations[0] != "xyz":
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i, noh=args.noh) for i in filenames]
+        molecules = [Molecule(filename=i, noh=args.noh) for i in input_list]
 
     # This is left as a hook, but should basically never trigger due to argparse
-    elif len(args.input) == 0:
-        filenames = glob.glob("./*.xyz")
-        terminations = [i[-3:] for i in filenames]
-        basename = filenames[0].split("/")[-1].split(".")[0]
-        if not all(terminations == "xyz"):
+    elif len(input_list) == 0:
+        input_list = glob.glob("./*.xyz")
+        terminations = list(set([i[-3:] for i in input_list]))
+        basename = long_substr([filename.split("/")[-1] for filename in input_list])
+        if len(terminations) > 1 or terminations[0] != "xyz":
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i, noh=args.noh) for i in filenames]
+        molecules = [Molecule(filename=i, noh=args.noh) for i in input_list]
 
     else:
-        basename = args.input[0].split("/")[-1].split(".")[0]
-        termination = args.input[0][-3:]
+        basename = input_list[0].split("/")[-1].split(".")[0]
+        termination = input_list[0][-3:]
         if termination == "xyz":
-            molecules = molecules_from_file(args.input[0], noh=args.noh)
+            molecules = molecules_from_file(input_list[0], noh=args.noh)
         else:
             raise InputError(
                 f"File with {termination} instead of xyz termination fed as input. Exiting."

@@ -59,7 +59,7 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     # Now generate a kernel based on the dihedrals
     if kernel == "rbf":
         euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
-        gamma_heuristic = 1 / (0.5 * euclid_0.std())
+        gamma_heuristic = 1 / (euclid_0.std())
         M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
     else:
         M -= pairwise_kernels(DA, DA, metric=kernel)

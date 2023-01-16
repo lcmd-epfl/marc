@@ -74,7 +74,7 @@ Several strategies are available for the generation of conformational ensembles.
 However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Hence, marc provides a convenient way of accomplishing three goals:
 
 - Select a handful of conformers that are representative of the diversity of the conformational ensemble using combined metrics.
-- Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag.
+- Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag and inputting a treshold in kcal/mol.
 - Proceed iteratively, helping the user select non-redundant conformers than can then be refined with a higher level and fed back to marc.
 
 The default clustering metric used in marc is the `"mix"` distance, which measures pairwise similarity based on heavy-atom rmsd times the energy difference times the kernel of the most relevant dihedral angles. The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy).  
@@ -89,7 +89,7 @@ python marc.py -i [FILENAME]
 
 Options can be consulted with the `-h` flag.
 
-The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking, can be provided in atomic units in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in any units. The energy window specified in the `ewin` command line argument should be in the same units (typically, kcal/mol, as in the CREST output).
+The input of marc is either a series or xyz files or a single trajectory-like xyz file with many conformers. All structures are expected to be analogous in terms of sorting and molecular topology. Energies per conformer, at any level of theory of your liking but in atomic units, can be provided in atomic units in the title line of each xyz block or file. Alternatively, energies can be provided in a plaintext file whose filename can be passed to the `ewin` command line argument. Such file must contain the same number of lines as conformers and two numbers per line (separated by blank spaces): an index, and an energy in atomic units. The energy window specified in the `ewin` command line argument should be in kcal/mol.
 
 Note that, by default, marc will select the most representative conformer out of every cluster. If you can provide energy values that you trust strongly, the `mine` flag will ensure that the lowest energy conformer of every cluster is selected.
 

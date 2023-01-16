@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-
 import sys
 
 import numpy as np
@@ -20,7 +18,7 @@ from navicat_marc.molecule import Molecule
 from navicat_marc.rmsd import rmsd_matrix
 
 
-def main():
+def run_marc():
     (
         basename,
         molecules,
@@ -46,7 +44,7 @@ def main():
                 f"marc has detected {l} molecules in input.\n Will automatically select a set of representative conformers using {c} clustering and {m} as metric."
             )
         if ewin is not None:
-            print(f"An energy window of {ewin} in energy units will be applied.")
+            print(f"An energy window of {ewin} kcal/mol will be applied.")
 
     # Generate the desired metric matrix
     if m in ["rmsd", "ewrmsd", "mix"]:
@@ -114,6 +112,8 @@ def main():
             idx_mine = cluster[
                 np.argmin(np.array([energies[j] for j in cluster], dtype=float))
             ]
+            if verb > 3:
+                print(f"The corresponding energies were: {list(energies[j])}")
             if index != idx_mine:
                 if verb > 2:
                     print(
@@ -135,6 +135,7 @@ def main():
             )
         avgs = np.zeros(len(clusters), dtype=float)
         stds = np.zeros(len(clusters), dtype=float)
+        repes = np.zeros(len(clusters), dtype=float)
         for i, cluster in enumerate(clusters):
             if verb > 2:
                 print(
@@ -145,15 +146,22 @@ def main():
             )
             avgs[i] = energies.mean()
             stds[i] = energies.std() * 0.5
+            repes[i] = molecules[indices[i]].energy
         lowest = np.min(avgs)
         accepted = list(np.where(avgs < ewin + lowest + stds)[0])
+        quasiaccepted = list(np.where(repes < ewin + lowest)[0])
         if verb > 2:
             print(f"Accepted indices are {accepted}.")
         for i, idx in enumerate(indices):
             if i in accepted:
                 if verb > 1:
                     print(
-                        f"Accepting selected conformer number {idx} due to energy threshold."
+                        f"Accepting selected conformer number {idx} due to energy threshold for the entire cluster."
+                    )
+            elif i in quasiaccepted:
+                if verb > 1:
+                    print(
+                        f"Accepting selected conformer number {idx} due to energy threshold for the lowest conformer (in spite of the cluster being high in energy)."
                     )
             else:
                 if verb > 1:
@@ -173,8 +181,3 @@ def main():
     else:
         for i, idx in enumerate(indices):
             molecules[idx].write(f"{basename}_selected_{idx:02}")
-
-
-if __name__ == "__main__" or __name__ == "navicat_marc.marc":
-    main()
-    exit()

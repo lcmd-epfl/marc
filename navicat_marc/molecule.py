@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import re
+from os.path import dirname
 
 import networkx as nx
 import numpy as np
@@ -9,6 +10,7 @@ import scipy.spatial
 from navicat_marc.exceptions import InputError
 
 ha_to_kcalmol = 627.509
+kcalmol_to_ha = 0.00159360
 
 symbol_to_number = {
     "Em": 0,  # empty site
@@ -461,12 +463,13 @@ class Molecule:
         f = open(filename, "w+")
         print(f"{len(self.atoms_with_h)}", file=f)
         if self.energy is not None:
-            print(f"{self.energy}", file=f)
+            printable_energy = np.round(self.energy * kcalmol_to_ha, decimals=6)
+            print(f"{printable_energy}", file=f)
         else:
             print(f"{self.title}", file=f)
         for i, atom in enumerate(self.atoms_with_h):
             print(
-                f"{number_to_symbol[atom]}    {self.coordinates_with_h[i][0]}    {self.coordinates_with_h[i][1]}    {self.coordinates_with_h[i][2]}",
+                f"{number_to_symbol[atom]:2}    {np.round(self.coordinates_with_h[i][0],decimals=6): }    {np.round(self.coordinates_with_h[i][1],decimals=6): }    {np.round(self.coordinates_with_h[i][2],decimals=6): }",
                 file=f,
             )
         f.close()
@@ -482,7 +485,6 @@ class Molecule:
         ]:
             yield value
 
-from os.path import dirname
 
 def test_compare_origin(path=f"{dirname(__file__)}/test_files/"):
     chunk_a = [
