@@ -305,11 +305,17 @@ class Molecule:
         title = f.readline().strip()
         if "energy:" in title:
             try:
-                etitle = title.split(":")[1].split(" ")[1]
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
-        else:
+        if "Eopt" in title and energy is None:
+            try:
+                etitle = title.split("Eopt")[-1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+        if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
             except ValueError:
@@ -374,11 +380,17 @@ class Molecule:
         title = next(lines_iter).strip()
         if "energy:" in title:
             try:
-                etitle = title.split(":")[1].split(" ")[1]
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
-        else:
+        if "Eopt" in title and energy is None:
+            try:
+                etitle = title.split("Eopt")[-1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+        if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
             except ValueError:
