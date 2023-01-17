@@ -3,7 +3,7 @@ navicat-marc: modular Analysis of Representative Conformers
 <!-- zenodo badge will go here -->
 
 ![marc logo](./images/marc_logo.png)
-[![PyPI version](https://badge.fury.io/py/navicat_marc.svg)](https://badge.fury.io/py/navicat_marc)
+[![PyPI version](https://badge.fury.io/py/navicat-marc.svg)](https://badge.fury.io/py/navicat_marc)
 
 ## Contents
 * [About](#about-)
