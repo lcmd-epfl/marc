@@ -11,7 +11,7 @@ with io.open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 setup(
     name="marc",
     packages=["navicat_marc"],
-    version="0.1.0",
+    version="0.1.2",
     description="Modular Analysis of Representative Conformers",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -29,4 +29,9 @@ setup(
         "setuptools",
     ],
     include_package_data=True,
+    entry_points={
+        "console_scripts": [
+            "navicat_marc = navicat_marc.marc:run_marc",
+        ],
+    },
 )
