@@ -310,16 +310,22 @@ class Molecule:
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
+            except AttributeError:
+                energy = None
         if "Eopt" in title and energy is None:
             try:
                 etitle = title.split("Eopt")[-1].rstrip()
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
+            except AttributeError:
+                energy = None
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
             except ValueError:
+                energy = None
+            except AttributeError:
                 energy = None
 
         # Use the number of atoms to not read beyond the end of a file
@@ -386,16 +392,22 @@ class Molecule:
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
+            except AttributeError:
+                energy = None
         if "Eopt" in title and energy is None:
             try:
                 etitle = title.split("Eopt")[-1].rstrip()
                 energy = float(etitle) * ha_to_kcalmol
             except ValueError:
                 energy = None
+            except AttributeError:
+                energy = None
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
             except ValueError:
+                energy = None
+            except AttributeError:
                 energy = None
 
         # Use the number of atoms to not read beyond the end of a file

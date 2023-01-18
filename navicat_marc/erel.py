@@ -10,11 +10,13 @@ def erel_matrix(mols, normalize=True):
     Parameters
     ----------
     mols : list of N molecule objects
+    normalize : whether to scale to the [0,1] range. Default: True
 
     Returns
     -------
     M : array
         (N,N) matrix
+    max : maximum relative energy difference
     """
     energies = np.array([mol.energy for mol in mols])
     n = len(mols)
@@ -23,6 +25,6 @@ def erel_matrix(mols, normalize=True):
         for j in range(i + 1, n):
             M[i, j] = M[j, i] = np.abs(energies[i] - energies[j])
     if normalize:
-        max = np.max(M)
+        max = np.max(np.abs(M))
         M = np.abs(M) / max
     return M, max

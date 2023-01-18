@@ -32,7 +32,12 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
 
 
 def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
-    mds = MDS(dissimilarity="precomputed", n_components=rank, n_init=100)
+    mds = MDS(
+        dissimilarity="precomputed",
+        n_components=rank,
+        n_init=100,
+        normalized_stress="auto",
+    )
     x = mds.fit_transform(m)
     if n_clusters is None:
         nm = m.shape[0]
@@ -41,7 +46,19 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
                 set(
                     [
                         min(max(int(nm * percentage), 2), nm - 1)
-                        for percentage in [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+                        for percentage in [
+                            0.01,
+                            0.05,
+                            0.1,
+                            0.15,
+                            0.2,
+                            0.25,
+                            0.3,
+                            0.35,
+                            0.4,
+                            0.45,
+                            0.5,
+                        ]
                     ]
                 )
             )
@@ -116,8 +133,20 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
             list(
                 set(
                     [
-                        min(max(int(nm * percentage), 2), 50)
-                        for percentage in [0.01, 0.05, 0.1, 0.25, 0.5]
+                        min(max(int(nm * percentage), 2), nm - 1)
+                        for percentage in [
+                            0.01,
+                            0.05,
+                            0.1,
+                            0.15,
+                            0.2,
+                            0.25,
+                            0.3,
+                            0.35,
+                            0.4,
+                            0.45,
+                            0.5,
+                        ]
                     ]
                 )
             )

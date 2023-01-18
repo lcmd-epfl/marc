@@ -83,6 +83,14 @@ def run_marc():
     if m == ["mix"]:
         A = da_m * erel_m * rmsd_m
 
+    if verb > 3:
+        print("The current dissimilarity matrix is :\n")
+        print("\n" + np.array_str(A, precision=1, suppress_small=True))
+        print(
+            f"Writing dissimilarity matrix (with full precision) to dm.npy in the working directory."
+        )
+        np.save("dm.npy", A)
+
     # Time to cluster after scaling the matrix. Scaling choice is not innocent.
 
     if c == "kmeans":
@@ -104,6 +112,7 @@ def run_marc():
                 """One or more molecules do not have an associated energy. Cannot use
                  the mine option. Exiting."""
             )
+        gmine = np.min(np.array(energies, dtype=float))
         for i, (index, cluster) in enumerate(zip(indices, clusters)):
             if verb > 2:
                 print(
@@ -113,7 +122,8 @@ def run_marc():
                 np.argmin(np.array([energies[j] for j in cluster], dtype=float))
             ]
             if verb > 3:
-                print(f"The corresponding energies were: {list(energies[j])}")
+                cenergies = np.array([energies[j] for j in cluster]) - gmine
+                print(f"The corresponding relative energies were: {list(cenergies)}")
             if index != idx_mine:
                 if verb > 2:
                     print(
