@@ -9,8 +9,10 @@ from navicat_marc.clustering import (
     agglomerative_clustering,
     kmeans_clustering,
     plot_dendrogram,
+    unique_nm,
 )
 from navicat_marc.da import da_matrix
+from navicat_marc.distatis import run_distatis
 from navicat_marc.erel import erel_matrix
 from navicat_marc.exceptions import InputError
 from navicat_marc.helpers import processargs
@@ -52,6 +54,9 @@ def run_marc():
         if plotmode > 1:
             plot_dendrogram(rmsd_m * max, "RMSD", verb)
         A = rmsd_m
+        if verb > 4:
+            print("\n The rmsd dissimilarity matrix is :\n")
+            print(np.array_str(A, precision=2, suppress_small=True))
 
     if m in ["erel", "ewrmsd", "ewda", "mix"]:
         energies = [molecule.energy for molecule in molecules]
@@ -66,32 +71,39 @@ def run_marc():
         if plotmode > 1:
             plot_dendrogram(erel_m * max, "E_rel", verb)
         A = erel_m
+        if verb > 4:
+            print("\n The relative energy dissimilarity matrix is :\n")
+            print(np.array_str(A, precision=2, suppress_small=True))
 
     if m in ["da", "ewda", "mix"]:
-        da_m = da_matrix(molecules, mode="dfs")
+        da_m, max = da_matrix(molecules, mode="dfs")
         if plotmode > 1:
-            plot_dendrogram(da_m, "Dihedral", verb)
+            plot_dendrogram(da_m * max, "Dihedral", verb)
         A = da_m
+        if verb > 4:
+            print("\n The dihedral angle dissimilarity matrix is :\n")
+            print(np.array_str(A, precision=2, suppress_small=True))
 
     # Mix the metric matrices if desired
-    if m == ["ewrmsd"]:
-        A = rmsd_m * erel_m
 
-    if m == ["ewrda"]:
-        A = da_m * erel_m
+    if m == "ewrmsd":
+        A = run_distatis([erel_m, rmsd_m], verb)
 
-    if m == ["mix"]:
-        A = da_m * erel_m * rmsd_m
+    if m == "ewda":
+        A = run_distatis([da_m, rmsd_m], verb)
+
+    if m == "mix":
+        A = run_distatis([da_m, erel_m, rmsd_m], verb)
 
     if verb > 3:
-        print("The current dissimilarity matrix is :\n")
-        print("\n" + np.array_str(A, precision=1, suppress_small=True))
+        print("\n The current dissimilarity matrix is :\n")
+        print(np.array_str(A, precision=2, suppress_small=True))
         print(
             f"Writing dissimilarity matrix (with full precision) to dm.npy in the working directory."
         )
         np.save("dm.npy", A)
 
-    # Time to cluster after scaling the matrix. Scaling choice is not innocent.
+    # Time to cluster using the dissimilarity matrix of choice
 
     if c == "kmeans":
         indices, clusters = kmeans_clustering(n_clusters, A, dof, verb)
@@ -101,6 +113,26 @@ def run_marc():
 
     if c == "affprop":
         indices, clusters = affprop_clustering(A, verb)
+
+    # Make sure no duplicates remain. Sometimes an issue with kmeans and were not filtered before
+
+    curr_n = len(indices)
+    effA = A[indices, :][:, indices]
+    if verb > 3:
+        print(
+            f"\n The dissimilarity matrix of the selected conformers {indices} is :\n"
+        )
+        print(np.array_str(effA, precision=2, suppress_small=True))
+        print(
+            f"Writing dissimilarity matrix of selected conformers (with full precision) to edm.npy in the working directory."
+        )
+        np.save("edm.npy", effA)
+
+    n, umask = unique_nm(effA, verb)
+    if n < curr_n:
+        print(f"Reduced the number of selected conformers by {curr_n - n}.")
+        indices = list(np.array(indices, dtype=int)[umask])
+        clusters = list(np.array(clusters, dtype=object)[umask])
 
     # Resample clusters based on energies if requested
 
@@ -122,7 +154,9 @@ def run_marc():
                 np.argmin(np.array([energies[j] for j in cluster], dtype=float))
             ]
             if verb > 3:
-                cenergies = np.array([energies[j] for j in cluster]) - gmine
+                cenergies = np.around(
+                    np.array([energies[j] for j in cluster]) - gmine, decimals=4
+                )
                 print(f"The corresponding relative energies were: {list(cenergies)}")
             if index != idx_mine:
                 if verb > 2:

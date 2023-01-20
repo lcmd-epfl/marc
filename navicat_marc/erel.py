@@ -25,6 +25,6 @@ def erel_matrix(mols, normalize=True):
         for j in range(i + 1, n):
             M[i, j] = M[j, i] = np.abs(energies[i] - energies[j])
     if normalize:
-        max = np.max(np.abs(M))
-        M = np.abs(M) / max
-    return M, max
+        maxval = np.max(np.abs(M))
+        M = np.abs(M) / maxval
+    return M, maxval

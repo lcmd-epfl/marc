@@ -13,6 +13,8 @@ from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering
 from sklearn.manifold import MDS
 from sklearn.neighbors import NearestCentroid
 
+from navicat_marc.exceptions import UniqueError
+
 
 def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     if verb > 0:
@@ -31,7 +33,7 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     plt.close()
 
 
-def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
+def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
     mds = MDS(
         dissimilarity="precomputed",
         n_components=rank,
@@ -39,6 +41,16 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
         normalized_stress="auto",
     )
     x = mds.fit_transform(m)
+
+    if verb > 5:
+        print("The current feature matrix is :\n")
+        with np.printoptions(threshold=np.inf):
+            print(np.array_str(x, precision=2, suppress_small=True))
+        print(
+            f"Writing feature matrix (with full precision) to fm.npy in the working directory."
+        )
+        np.save("fm.npy", x)
+
     if n_clusters is None:
         nm = m.shape[0]
         percentages = sorted(
@@ -65,6 +77,8 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
         )
         gaps = gap(x, nrefs=min(nm, 50), ks=percentages, verb=verb)
         n_clusters = max(percentages[np.argmax(gaps)], 2)
+        n_unique, rank = unique_nr(m, verb=verb)
+        n_clusters = min(n_unique, n_clusters)
     km = KMeans(n_clusters=n_clusters, n_init=100)
     cm = km.fit_predict(x)
     u, c = np.unique(cm, return_counts=True)
@@ -90,7 +104,7 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
         # Testing:
         if verb > 1:
             print(
-                f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]}"
+                f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
     return closest_pt_idx, clusters
@@ -118,15 +132,20 @@ def affprop_clustering(m, verb=0):
         # Testing:
         if verb > 1:
             print(
-                f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]}"
+                f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]:02}"
             )
         closest_pt_idx.append(ap.cluster_centers_indices_[iclust])
     return closest_pt_idx, clusters
 
 
-def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
+def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
     if n_clusters is None:
-        mds = MDS(dissimilarity="precomputed", n_components=rank, n_init=100)
+        mds = MDS(
+            dissimilarity="precomputed",
+            n_components=rank,
+            n_init=100,
+            normalized_stress="auto",
+        )
         x = mds.fit_transform(m)
         nm = m.shape[0]
         percentages = sorted(
@@ -151,8 +170,10 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
                 )
             )
         )
-        gaps = gap(x, nrefs=max(nm, 50), ks=percentages, verb=verb)
+        gaps = gap(x, nrefs=min(nm, 50), ks=percentages, verb=verb)
         n_clusters = max(percentages[np.argmax(gaps)], 2)
+        n_unique, rank = unique_nr(m, verb=verb)
+        n_clusters = min(n_unique, n_clusters)
     m = np.ones_like(m) - m
     ac = AgglomerativeClustering(
         n_clusters=n_clusters, affinity="precomputed", linkage="single"
@@ -184,7 +205,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=2, verb=0):
         # Testing:
         if verb > 1:
             print(
-                f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]}"
+                f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
     return closest_pt_idx, clusters
@@ -218,6 +239,37 @@ def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
                 [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
             )
         gaps[i] = scipy.mean(scipy.log(refdisps)) - scipy.log(disp)
-        if verb > 2:
+        if verb > 3:
             print(f"Gaps for k-values {ks} : {gaps}")
     return gaps
+
+
+def unique_nr(data, verb=0):
+    data = np.round(data, decimals=4)
+    a, idxs = np.unique(data, axis=0, return_index=True)
+    umask = np.array([x in idxs for x in range(data.shape[0])], dtype=bool)
+    uidx = np.where(umask == True)[0]
+    n = uidx.size
+    r = np.linalg.matrix_rank(data, hermitian=True)
+    if n < 2:
+        raise UniqueError(
+            "It seems like all the structures are the same or extremely similar in the defined metric. Check the input."
+        )
+    if verb > 1:
+        print(
+            f"{n} unique entries detected in dissimilarity matrix of rank {r}. Set {n} as upper bound of number of clusters."
+        )
+    return n, r
+
+
+def unique_nm(data, verb=0):
+    data = np.round(data, decimals=4)
+    a, idxs = np.unique(data, axis=0, return_index=True)
+    umask = np.array([x in idxs for x in range(data.shape[0])], dtype=bool)
+    uidx = np.where(umask == True)[0]
+    n = uidx.size
+    if verb > 3:
+        print(
+            f"{n} unique entries detected in dissimilarity matrix of selected conformers."
+        )
+    return n, umask

@@ -63,7 +63,11 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
         M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
     else:
         M -= pairwise_kernels(DA, DA, metric=kernel)
-    return np.tril(M) + np.triu(M.T, 1)
+    M = np.tril(M) + np.triu(M.T, 1)
+    if normalize:
+        maxval = np.max(M)
+        M = np.abs(M) / maxval
+    return M, maxval
 
 
 def delta_dihedral(indices, P, Q):

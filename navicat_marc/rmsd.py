@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np
+from scipy.optimize import linear_sum_assignment
+from scipy.spatial.distance import cdist
 
 
 def rmsd_matrix(mols, normalize=True):
@@ -21,10 +23,11 @@ def rmsd_matrix(mols, normalize=True):
     M = np.zeros((n, n))
     for i in range(0, n - 1):
         for j in range(i + 1, n):
-            M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j])
+            view = reorder_hungarian(mols[0].atoms, coords[i], coords[j])
+            M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j][view])
     if normalize:
-        max = np.max(M)
-        M = np.abs(M) / max
+        maxval = np.max(M)
+        M = np.abs(M) / maxval
     return M, max
 
 
@@ -257,3 +260,61 @@ def centroid(X):
     """
     C = X.mean(axis=0)
     return C
+
+
+def reorder_hungarian(
+    p_atoms,
+    p_coord,
+    q_coord,
+):
+    """
+    Re-orders the input atom list and xyz coordinates using the Hungarian
+    method (using optimized column results)
+    Parameters
+    ----------
+    p_atoms : array
+        (N,1) matrix, where N is points holding the atoms' names
+    p_coord : array
+        (N,D) matrix, where N is points and D is dimension
+    q_coord : array
+        (N,D) matrix, where N is points and D is dimension
+    Returns
+    -------
+    view_reorder : array
+             (N,1) matrix, reordered indexes of atom alignment based on the
+             coordinates of the atoms
+    """
+
+    # Find unique atoms
+    unique_atoms = np.unique(p_atoms)
+
+    # generate full view from q shape to fill in atom view on the fly
+    view_reorder = np.zeros(p_atoms.shape, dtype=int)
+    view_reorder -= 1
+
+    for atom in unique_atoms:
+        (p_atom_idx,) = np.where(p_atoms == atom)
+        (q_atom_idx,) = np.where(p_atoms == atom)
+
+        A_coord = p_coord[p_atom_idx]
+        B_coord = q_coord[q_atom_idx]
+
+        view = hungarian(A_coord, B_coord)
+        view_reorder[p_atom_idx] = q_atom_idx[view]
+
+    return view_reorder
+
+
+def hungarian(A, B):
+    """
+    Hungarian reordering.
+    Assume A and B are coordinates for atoms of SAME type only
+    """
+
+    distances = cdist(A, B, "euclidean")
+
+    # Perform Hungarian analysis on distance matrix between atoms of 1st
+    # structure and trial structure
+    indices_a, indices_b = linear_sum_assignment(distances)
+
+    return indices_b
