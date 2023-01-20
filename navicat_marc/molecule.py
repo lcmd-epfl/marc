@@ -363,7 +363,7 @@ class Molecule:
         else:
             self.atoms = atoms
             self.coordinates = V
-        self.energy = np.round(energy, 4)
+        self.energy = energy
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()
@@ -442,7 +442,7 @@ class Molecule:
         else:
             self.atoms = atoms
             self.coordinates = V
-        self.energy = np.round(energy, 4)
+        self.energy = energy
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()
