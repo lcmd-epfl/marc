@@ -30,6 +30,7 @@ def run_marc():
         n_clusters,
         ewin,
         mine,
+        sort,
         plotmode,
         verb,
     ) = processargs(sys.argv[1:])
@@ -50,7 +51,7 @@ def run_marc():
 
     # Generate the desired metric matrix
     if m in ["rmsd", "ewrmsd", "mix"]:
-        rmsd_m, max = rmsd_matrix(molecules)
+        rmsd_m, max = rmsd_matrix(molecules, sort=sort)
         if plotmode > 1:
             plot_dendrogram(rmsd_m * max, "RMSD", verb)
         A = rmsd_m

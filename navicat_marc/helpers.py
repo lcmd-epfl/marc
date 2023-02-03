@@ -20,6 +20,8 @@ def long_substr(data):
             for j in range(len(data[0]) - i + 1):
                 if j > len(substr) and all(data[0][i : i + j] in x for x in data):
                     substr = data[0][i : i + j]
+    while (substr[-1] == "-") or (substr[-1] == "_"):
+        substr = substr[:-1]
     return substr
 
 
@@ -98,7 +100,7 @@ def processargs(arguments):
         epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
     mbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 0.1.4"
+        "-version", "--version", action="version", version="%(prog)s 0.1.5"
     )
     mbuilder.add_argument(
         "-i",
@@ -161,6 +163,16 @@ def processargs(arguments):
         action="store_false",
         default=True,
         help="If set, hydrogen atoms will be considered for all RMSD and dihedral angle computations. (default: ignore hydrogens)",
+    )
+    mbuilder.add_argument(
+        "-s",
+        "--s",
+        "-sort",
+        "--sort",
+        dest="sort",
+        action="store_true",
+        default=False,
+        help="If set, will attempt to sort molecular geometries. This can be time consuming. (default: False)",
     )
     mbuilder.add_argument(
         "-efile",
@@ -293,7 +305,7 @@ def processargs(arguments):
         if not dof > 0:
             raise InputError("Molecules have less than 1 degree of freedom. Exiting.")
     if args.verb > 0 and sort:
-        print("Warning! Molecule geometries are not sorted.")
+        print("Warning! Molecule geometries are not sorted. sort set to True.")
 
     # Check for isomorphism
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
@@ -337,6 +349,9 @@ def processargs(arguments):
     else:
         n = None
 
+    if args.sort != sort:
+        sort = args.sort
+
     return (
         basename,
         np.array(molecules, dtype=object),
@@ -345,6 +360,7 @@ def processargs(arguments):
         args.m,
         n,
         ewin,
+        sort,
         args.mine,
         args.plotmode,
         args.verb,

@@ -5,7 +5,7 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
 
-def rmsd_matrix(mols, normalize=True):
+def rmsd_matrix(mols, sort=False, normalize=True):
     """
     Compute pairwise RMSD matrix between all molecules in mols.
 
@@ -23,8 +23,11 @@ def rmsd_matrix(mols, normalize=True):
     M = np.zeros((n, n))
     for i in range(0, n - 1):
         for j in range(i + 1, n):
-            view = reorder_hungarian(mols[0].atoms, coords[i], coords[j])
-            M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j][view])
+            if sort:
+                view = reorder_hungarian(mols[0].atoms, coords[i], coords[j])
+                M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j][view])
+            else:
+                M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j])
     if normalize:
         maxval = np.max(M)
         M = np.abs(M) / maxval
