@@ -15,6 +15,8 @@ from sklearn.neighbors import NearestCentroid
 
 from navicat_marc.exceptions import UniqueError
 
+ref_percentages = [0.01, 0.5]
+
 
 def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     if verb > 0:
@@ -53,30 +55,17 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
 
     if n_clusters is None:
         nm = m.shape[0]
-        percentages = sorted(
-            list(
-                set(
-                    [
-                        min(max(int(nm * percentage), 2), nm - 1)
-                        for percentage in [
-                            0.01,
-                            0.05,
-                            0.1,
-                            0.15,
-                            0.2,
-                            0.25,
-                            0.3,
-                            0.35,
-                            0.4,
-                            0.45,
-                            0.5,
-                        ]
-                    ]
-                )
-            )
+        percentages = range(
+            min([max(int(nm * percentage), 1) for percentage in ref_percentages]),
+            max(
+                [
+                    min(max(int(nm * percentage), 3), nm - 1)
+                    for percentage in ref_percentages
+                ]
+            ),
         )
-        gaps = gap(x, nrefs=min(nm, 50), ks=percentages, verb=verb)
-        n_clusters = max(percentages[np.argmax(gaps)], 2)
+        id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
+        n_clusters = max(percentages[id_gap], 2)
         n_unique, rank = unique_nr(m, verb=verb)
         n_clusters = min(n_unique, n_clusters)
     km = KMeans(n_clusters=n_clusters, n_init=100)
@@ -101,7 +90,6 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             [euclidean(x[idx], cluster_cen) for idx in cluster_pts_indices]
         )
 
-        # Testing:
         if verb > 1:
             print(
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
@@ -129,7 +117,6 @@ def affprop_clustering(m, verb=0):
 
         min_idx = ap.cluster_centers_indices_[iclust]
 
-        # Testing:
         if verb > 1:
             print(
                 f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]:02}"
@@ -148,30 +135,17 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
         )
         x = mds.fit_transform(m)
         nm = m.shape[0]
-        percentages = sorted(
-            list(
-                set(
-                    [
-                        min(max(int(nm * percentage), 2), nm - 1)
-                        for percentage in [
-                            0.01,
-                            0.05,
-                            0.1,
-                            0.15,
-                            0.2,
-                            0.25,
-                            0.3,
-                            0.35,
-                            0.4,
-                            0.45,
-                            0.5,
-                        ]
-                    ]
-                )
-            )
+        percentages = range(
+            min([max(int(nm * percentage), 1) for percentage in ref_percentages]),
+            max(
+                [
+                    min(max(int(nm * percentage), 3), nm - 1)
+                    for percentage in ref_percentages
+                ]
+            ),
         )
-        gaps = gap(x, nrefs=min(nm, 50), ks=percentages, verb=verb)
-        n_clusters = max(percentages[np.argmax(gaps)], 2)
+        id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
+        n_clusters = max(percentages[id_gap], 2)
         n_unique, rank = unique_nr(m, verb=verb)
         n_clusters = min(n_unique, n_clusters)
     m = np.ones_like(m) - m
@@ -202,7 +176,6 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             [euclidean(m[idx], cluster_cen) for idx in cluster_pts_indices]
         )
 
-        # Testing:
         if verb > 1:
             print(
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
@@ -211,7 +184,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
     return closest_pt_idx, clusters
 
 
-def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
+def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
     shape = data.shape
     if refs is None:
         tops = data.max(axis=0)
@@ -223,25 +196,44 @@ def gap(data, refs=None, nrefs=20, ks=range(1, 11), verb=0):
     else:
         rands = refs
     gaps = np.zeros((len(ks),))
+    s = np.zeros((len(ks),))
+    diff = np.zeros((len(ks) - 1,))
     for (i, k) in enumerate(ks):
         km = KMeans(n_clusters=k, n_init=5)
-        cm = km.fit_predict(data)
+        _ = km.fit_predict(data)
         kmc = km.cluster_centers_
         kml = km.labels_
         disp = sum([euclidean(data[m, :], kmc[kml[m], :]) for m in range(shape[0])])
         refdisps = np.zeros((rands.shape[2],))
         for j in range(rands.shape[2]):
             km = KMeans(n_clusters=k, n_init=5)
-            cm = km.fit_predict(rands[:, :, j])
+            _ = km.fit_predict(rands[:, :, j])
             kmc = km.cluster_centers_
             kml = km.labels_
             refdisps[j] = sum(
                 [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
             )
-        gaps[i] = scipy.mean(scipy.log(refdisps)) - scipy.log(disp)
-        if verb > 3:
-            print(f"Gaps for k-values {ks} : {gaps}")
-    return gaps
+        l = np.mean(scipy.log(refdisps))
+        rld = np.log(disp)
+        gaps[i] = l - rld
+        sdk = np.sqrt(np.mean((np.log(refdisps) - rld) ** 2.0))
+        s[i] = np.sqrt(1.0 + 1.0 / rands.shape[2]) * sdk
+        if verb > 5:
+            print(f"Gaps for k-values {ks[i]} : {gaps[i]}")
+    for i in range(len(ks) - 1):
+        diff[i] = gaps[i] - gaps[i + 1] + s[i + 1]
+        if verb > 4:
+            print(
+                f"Gap(i) - Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} - {s[i+1]} =  {diff[i]}"
+            )
+    if verb > 3:
+        print(f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks} : {diff}")
+    return diff
+
+
+def gap(data, refs=None, nrefs=5, ks=range(1, 11), verb=0):
+    diff = gaps_diff(data, refs, nrefs, ks, verb)
+    return np.argmax(diff)
 
 
 def unique_nr(data, verb=0):

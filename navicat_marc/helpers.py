@@ -47,6 +47,14 @@ def bround(x, base: float = 10, type=None) -> float:
         return tick
 
 
+def at_eq(a, b):
+    return (a["atomic_number"] == b["atomic_number"]) and (a["degree"] == b["degree"])
+
+
+def b_eq(a, b):
+    return np.isclose(a["distance"], b["distance"], rtol=0.05, atol=0.05)
+
+
 def chunker(seq, size):
     return (seq[pos : pos + size] for pos in range(0, len(seq), size))
 
@@ -68,7 +76,7 @@ def group_data_points(bc, ec, names):
     return cb, ms
 
 
-def molecules_from_file(filename, noh=True):
+def molecules_from_file(filename, scale_factor=1.10, noh=True):
     molecules = []
     f = open(filename, "r")
     n_atoms = 0
@@ -87,7 +95,7 @@ def molecules_from_file(filename, noh=True):
             f"Could not parse trajectory xyz file {filename} properly. Check format."
         )
     for chunk in chunker(lines, n_atoms + 2):
-        molecule = Molecule(lines=chunk, noh=noh)
+        molecule = Molecule(lines=chunk, scale_factor=scale_factor, noh=noh)
         molecules.append(molecule)
     return molecules
 
@@ -149,6 +157,13 @@ def processargs(arguments):
         help="If set to a float, energy window for conformers to be accepted in kcal/mol. (default: None)",
     )
     mbuilder.add_argument(
+        "-sf",
+        "--sf",
+        dest="sf",
+        default=1.10,
+        help="If set to a float, scale factor used to determine connectivity from 3D coordinates using covalent radii. (default: 1.10)",
+    )
+    mbuilder.add_argument(
         "-mine",
         "--mine",
         dest="mine",
@@ -172,7 +187,17 @@ def processargs(arguments):
         dest="sort",
         action="store_true",
         default=False,
-        help="If set, will attempt to sort molecular geometries. This can be time consuming. (default: False)",
+        help="If set, will attempt to sort molecular geometries, including index permutations, w.r.t. the first structure. This can be time consuming. (default: False)",
+    )
+    mbuilder.add_argument(
+        "-ts",
+        "--ts",
+        "-truesort",
+        "--truesort",
+        dest="truesort",
+        action="store_true",
+        default=False,
+        help="If set, will attempt to sort molecular geometries, including index permutations, in every pairwise comparison. This is extremely time consuming. (default: False)",
     )
     mbuilder.add_argument(
         "-efile",
@@ -212,7 +237,9 @@ def processargs(arguments):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i, noh=args.noh) for i in input_list]
+        molecules = [
+            Molecule(filename=i, scale_factor=args.sf, noh=args.noh) for i in input_list
+        ]
 
     # This is left as a hook, but should basically never trigger due to argparse
     elif len(input_list) == 0:
@@ -223,13 +250,17 @@ def processargs(arguments):
             raise InputError(
                 f"Files with {terminations} instead of all xyz termination fed as input. Exiting."
             )
-        molecules = [Molecule(filename=i, noh=args.noh) for i in input_list]
+        molecules = [
+            Molecule(filename=i, scale_factor=args.sf, noh=args.noh) for i in input_list
+        ]
 
     else:
         basename = input_list[0].split("/")[-1].split(".")[0]
         termination = input_list[0][-3:]
         if termination == "xyz":
-            molecules = molecules_from_file(input_list[0], noh=args.noh)
+            molecules = molecules_from_file(
+                input_list[0], scale_factor=args.sf, noh=args.noh
+            )
         else:
             raise InputError(
                 f"File with {termination} instead of xyz termination fed as input. Exiting."
@@ -311,14 +342,15 @@ def processargs(arguments):
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
         g_a = molecule_a.graph
         g_b = molecule_b.graph
-        if nx.is_isomorphic(g_a, g_b):
-            continue
+
+        GM = nx.algorithms.isomorphism.GraphMatcher(g_a, g_b, at_eq, b_eq)
+        if GM.is_isomorphic():
+            im = True
         else:
             if args.verb > 0:
                 print("Warning! Molecule topologies are not isomorphic.")
-            isomorph = False
+            im = False
             break
-        isomorph = True
 
     # Double check if energies are properly set
     energies = [molecule.energy for molecule in molecules]
@@ -351,6 +383,24 @@ def processargs(arguments):
 
     if args.sort != sort:
         sort = args.sort
+    if args.truesort:
+        if args.verb > 0:
+            print(
+                "Warning! Truesort pairwise sorting is remarkably expensive. This may take a ridiculous amount of time. You may want to explore other options...."
+            )
+        truesort = True
+        sort = True
+    else:
+        truesort = False
+    if args.m in ["erel", "da", "ewda"]:
+        sort = False
+        truesort = False
+        if args.verb > 0:
+            print("Warning! Will not sort molecules because no RMSDs will be computed.")
+    if ((sort and truesort) or sort) and not im:
+        raise InputError(
+            f"Input molecules cannot be reliably sorted.\n The automatic sorting routine will fail because the reconstructed molecular graphs were found not to be isomorphic. It might be possible to fix this by adapting the covalent radius scale factor of the graph constructor with the -sf option, but sometimes it cannot be fixed (e.g. different conformers have significantly different bond lengths). For those cases, you can use a metric that does not require RMSDs.\n Exiting."
+        )
 
     return (
         basename,
@@ -360,8 +410,9 @@ def processargs(arguments):
         args.m,
         n,
         ewin,
-        sort,
         args.mine,
+        sort,
+        truesort,
         args.plotmode,
         args.verb,
     )

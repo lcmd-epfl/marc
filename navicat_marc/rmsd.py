@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
+import networkx as nx
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
+from navicat_marc.helpers import at_eq, b_eq
 
-def rmsd_matrix(mols, sort=False, normalize=True):
+
+def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
     """
     Compute pairwise RMSD matrix between all molecules in mols.
 
@@ -18,16 +21,60 @@ def rmsd_matrix(mols, sort=False, normalize=True):
     M : array
         (N,N) matrix
     """
-    coords = np.array([mol.coordinates for mol in mols])
     n = len(mols)
     M = np.zeros((n, n))
+    pos_ibj = []
     for i in range(0, n - 1):
         for j in range(i + 1, n):
             if sort:
-                view = reorder_hungarian(mols[0].atoms, coords[i], coords[j])
-                M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j][view])
-            else:
-                M[i, j] = M[j, i] = kabsch_rmsd(coords[i], coords[j])
+                GM = nx.algorithms.isomorphism.GraphMatcher(
+                    mols[i].graph, mols[j].graph, at_eq, b_eq
+                )
+                iviews = [
+                    (
+                        np.array(list(im.keys()), dtype=int),
+                        np.array(list(im.values()), dtype=int),
+                    )
+                    for im in GM.isomorphisms_iter()
+                ]
+                min_res = np.inf
+                for k, (ibi, ibj) in enumerate(iviews):
+                    ibi, ibj = ibi[ibi.argsort()], ibj[ibi.argsort()]
+                    res = rmsd(mols[i].coordinates, mols[j].coordinates[ibj])
+                    if res < min_res:
+                        save_ibj = ibj
+                        min_res = res
+                    if np.isclose(0, min_res):
+                        save_ibj = ibj
+                        break
+                pos_ibj.append(save_ibj)
+                res, rotated_coordinates = kabsch_rmsd(
+                    mols[i].coordinates, mols[j].coordinates[save_ibj]
+                )
+                mols[j].update(mols[j].atoms[save_ibj], rotated_coordinates)
+                M[i, j] = M[j, i] = res
+            if not sort and len(pos_ibj) > 0:
+                for k, ibj in enumerate(pos_ibj):
+                    res = rmsd(mols[i].coordinates, mols[j].coordinates[ibj])
+                    if res < min_res:
+                        save_ibj = ibj
+                        min_res = res
+                    if np.isclose(0, min_res):
+                        save_ibj = ibj
+                        break
+                res, rotated_coordinates = kabsch_rmsd(
+                    mols[i].coordinates, mols[j].coordinates[save_ibj]
+                )
+                mols[j].update(mols[j].atoms[save_ibj], rotated_coordinates)
+                M[i, j] = M[j, i] = res
+            if not sort and len(pos_ibj) == 0:
+                res, rotated_coordinates = kabsch_rmsd(
+                    mols[i].coordinates, mols[j].coordinates
+                )
+                mols[j].update(mols[j].atoms, rotated_coordinates)
+                M[i, j] = M[j, i] = res
+        if not truesort:
+            sort = False
     if normalize:
         maxval = np.max(M)
         M = np.abs(M) / maxval
@@ -49,9 +96,12 @@ def kabsch_rmsd(P, Q):
     -------
     rmsd : float
         root-mean squared deviation
+    Q : array
+        (N,D) matrix, where N is points and D is dimension,
+        rotated
     """
-    P = kabsch_rotate(P, Q)
-    return rmsd(P, Q)
+    Q = kabsch_rotate(Q, P)
+    return rmsd(P, Q), Q
 
 
 def rmsd(V, W):
@@ -71,12 +121,7 @@ def rmsd(V, W):
         Root-mean-square deviation
 
     """
-    D = len(V[0])
-    N = len(V)
-    rmsd = 0.0
-    for v, w in zip(V, W):
-        rmsd += sum([(v[i] - w[i]) ** 2.0 for i in range(D)])
-    return np.sqrt(rmsd / N)
+    return np.sum((V - W) ** 2) / len(V)
 
 
 def kabsch_rotate(P, Q):
@@ -137,14 +182,6 @@ def kabsch(P, Q):
 
     # Computation of the covariance matrix
     C = np.dot(np.transpose(P), Q)
-
-    # Computation of the optimal rotation matrix
-    # This can be done using singular value decomposition (SVD)
-    # Getting the sign of the det(V)*(W) to decide
-    # whether we need to correct our rotation matrix to ensure a
-    # right-handed coordinate system.
-    # And finally calculating the optimal rotation matrix U
-    # see http://en.wikipedia.org/wiki/Kabsch_algorithm
     V, S, W = np.linalg.svd(C)
     d = (np.linalg.det(V) * np.linalg.det(W)) < 0.0
 
@@ -267,6 +304,7 @@ def centroid(X):
 
 def reorder_hungarian(
     p_atoms,
+    q_atoms,
     p_coord,
     q_coord,
 ):
@@ -276,6 +314,8 @@ def reorder_hungarian(
     Parameters
     ----------
     p_atoms : array
+        (N,1) matrix, where N is points holding the atoms' names
+    q_atoms : array
         (N,1) matrix, where N is points holding the atoms' names
     p_coord : array
         (N,D) matrix, where N is points and D is dimension
@@ -288,16 +328,24 @@ def reorder_hungarian(
              coordinates of the atoms
     """
 
+    # hview = reorder_hungarian(
+    #    mols[i].atoms,
+    #    mols[j].atoms,
+    #    mols[i].coordinates,
+    #    mols[j].coordinates,
+    # )
+    # mols[j].update(mols[j].atoms[hview], mols[j].coordinates[hview])
+
     # Find unique atoms
     unique_atoms = np.unique(p_atoms)
 
     # generate full view from q shape to fill in atom view on the fly
-    view_reorder = np.zeros(p_atoms.shape, dtype=int)
+    view_reorder = np.zeros(q_atoms.shape, dtype=int)
     view_reorder -= 1
 
     for atom in unique_atoms:
         (p_atom_idx,) = np.where(p_atoms == atom)
-        (q_atom_idx,) = np.where(p_atoms == atom)
+        (q_atom_idx,) = np.where(q_atoms == atom)
 
         A_coord = p_coord[p_atom_idx]
         B_coord = q_coord[q_atom_idx]

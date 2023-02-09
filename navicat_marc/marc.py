@@ -31,6 +31,7 @@ def run_marc():
         ewin,
         mine,
         sort,
+        truesort,
         plotmode,
         verb,
     ) = processargs(sys.argv[1:])
@@ -51,9 +52,9 @@ def run_marc():
 
     # Generate the desired metric matrix
     if m in ["rmsd", "ewrmsd", "mix"]:
-        rmsd_m, max = rmsd_matrix(molecules, sort=sort)
+        rmsd_m, rmsd_max = rmsd_matrix(molecules, sort=sort, truesort=truesort)
         if plotmode > 1:
-            plot_dendrogram(rmsd_m * max, "RMSD", verb)
+            plot_dendrogram(rmsd_m * rmsd_max, "RMSD", verb)
         A = rmsd_m
         if verb > 4:
             print("\n The rmsd dissimilarity matrix is :\n")
@@ -68,18 +69,18 @@ def run_marc():
                 """One or more molecules do not have an associated energy. Cannot use
                  energy metrics. Exiting."""
             )
-        erel_m, max = erel_matrix(molecules)
+        erel_m, erel_max = erel_matrix(molecules)
         if plotmode > 1:
-            plot_dendrogram(erel_m * max, "E_rel", verb)
+            plot_dendrogram(erel_m * erel_max, "E_rel", verb)
         A = erel_m
         if verb > 4:
             print("\n The relative energy dissimilarity matrix is :\n")
             print(np.array_str(A, precision=2, suppress_small=True))
 
     if m in ["da", "ewda", "mix"]:
-        da_m, max = da_matrix(molecules, mode="dfs")
+        da_m, da_max = da_matrix(molecules, mode="dfs")
         if plotmode > 1:
-            plot_dendrogram(da_m * max, "Dihedral", verb)
+            plot_dendrogram(da_m * da_max, "Dihedral", verb)
         A = da_m
         if verb > 4:
             print("\n The dihedral angle dissimilarity matrix is :\n")

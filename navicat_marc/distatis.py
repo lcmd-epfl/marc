@@ -3,6 +3,7 @@
 import numpy as np
 import scipy.spatial as sps
 from sklearn.decomposition import PCA
+
 from navicat_marc.exceptions import UniqueError
 
 
