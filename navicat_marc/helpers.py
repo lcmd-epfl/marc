@@ -160,6 +160,7 @@ def processargs(arguments):
         "-sf",
         "--sf",
         dest="sf",
+        type=float,
         default=1.10,
         help="If set to a float, scale factor used to determine connectivity from 3D coordinates using covalent radii. (default: 1.10)",
     )

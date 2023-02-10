@@ -4,13 +4,10 @@ import sys
 
 import numpy as np
 
-from navicat_marc.clustering import (
-    affprop_clustering,
-    agglomerative_clustering,
-    kmeans_clustering,
-    plot_dendrogram,
-    unique_nm,
-)
+from navicat_marc.clustering import (affprop_clustering,
+                                     agglomerative_clustering,
+                                     kmeans_clustering, plot_dendrogram,
+                                     unique_nm)
 from navicat_marc.da import da_matrix
 from navicat_marc.distatis import run_distatis
 from navicat_marc.erel import erel_matrix

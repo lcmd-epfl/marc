@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
 import scipy.cluster.vq
 from scipy.spatial.distance import euclidean, squareform
-from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
+from sklearn.cluster import (DBSCAN, AffinityPropagation,
+                             AgglomerativeClustering, KMeans)
 from sklearn.manifold import MDS
 from sklearn.neighbors import NearestCentroid
 
