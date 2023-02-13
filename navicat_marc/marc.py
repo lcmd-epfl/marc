@@ -4,10 +4,13 @@ import sys
 
 import numpy as np
 
-from navicat_marc.clustering import (affprop_clustering,
-                                     agglomerative_clustering,
-                                     kmeans_clustering, plot_dendrogram,
-                                     unique_nm)
+from navicat_marc.clustering import (
+    affprop_clustering,
+    agglomerative_clustering,
+    kmeans_clustering,
+    plot_dendrogram,
+    unique_nm,
+)
 from navicat_marc.da import da_matrix
 from navicat_marc.distatis import run_distatis
 from navicat_marc.erel import erel_matrix
@@ -57,14 +60,14 @@ def run_marc():
             print("\n The rmsd dissimilarity matrix is :\n")
             print(np.array_str(A, precision=2, suppress_small=True))
 
-    if m in ["erel", "ewrmsd", "ewda", "mix"]:
+    if m in ["erel", "ewrmsd", "ewda", "mix"] or (ewin is not None) or mine:
         energies = [molecule.energy for molecule in molecules]
         if None in energies:
             if verb > 2:
                 print(f"Energies are: {energies}")
             raise InputError(
                 """One or more molecules do not have an associated energy. Cannot use
-                 energy metrics. Exiting."""
+                 energy metrics, mine or ewin. Exiting."""
             )
         erel_m, erel_max = erel_matrix(molecules)
         if plotmode > 1:
