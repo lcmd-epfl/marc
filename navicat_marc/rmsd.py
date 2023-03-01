@@ -78,7 +78,7 @@ def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
     if normalize:
         maxval = np.max(M)
         M = np.abs(M) / maxval
-    return M, max
+    return M, maxval
 
 
 def kabsch_rmsd(P, Q):
