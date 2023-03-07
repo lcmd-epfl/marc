@@ -59,6 +59,9 @@ def run_marc():
         if verb > 4:
             print("\n The rmsd dissimilarity matrix is :\n")
             print(np.array_str(A, precision=2, suppress_small=True))
+            print(
+                f"Before normalization, largest dissimilarity was {rmsd_max} angstrom."
+            )
 
     if m in ["erel", "ewrmsd", "ewda", "mix"] or (ewin is not None) or mine:
         energies = [molecule.energy for molecule in molecules]
@@ -76,6 +79,9 @@ def run_marc():
         if verb > 4:
             print("\n The relative energy dissimilarity matrix is :\n")
             print(np.array_str(A, precision=2, suppress_small=True))
+            print(
+                f"Before normalization, largest dissimilarity was {erel_max} kcal/mol."
+            )
 
     if m in ["da", "ewda", "mix"]:
         da_m, da_max = da_matrix(molecules, mode="dfs")
@@ -85,6 +91,9 @@ def run_marc():
         if verb > 4:
             print("\n The dihedral angle dissimilarity matrix is :\n")
             print(np.array_str(A, precision=2, suppress_small=True))
+            print(
+                f"Before normalization, largest dissimilarity was {da_max} adimensional units (kernel of dihedral angle vectors)."
+            )
 
     # Mix the metric matrices if desired
 

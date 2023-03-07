@@ -9,7 +9,8 @@ import networkx as nx
 import numpy as np
 
 from navicat_marc.exceptions import InputError
-from navicat_marc.molecule import Molecule
+from navicat_marc.molecule import Molecule, at_eq, b_eq
+from navicat_marc.rmsd import reorder_hungarian, reorder_distance, kabsch_rmsd
 
 
 def long_substr(data):
@@ -22,6 +23,10 @@ def long_substr(data):
                     substr = data[0][i : i + j]
     while (substr[-1] == "-") or (substr[-1] == "_"):
         substr = substr[:-1]
+    while (substr[0] == "-") or (substr[0] == "_"):
+        substr = substr[1:]
+    if substr == "":
+        substr = "Molecule"
     return substr
 
 
@@ -45,14 +50,6 @@ def bround(x, base: float = 10, type=None) -> float:
     else:
         tick = base * np.round(x / base)
         return tick
-
-
-def at_eq(a, b):
-    return (a["atomic_number"] == b["atomic_number"]) and (a["degree"] == b["degree"])
-
-
-def b_eq(a, b):
-    return np.isclose(a["distance"], b["distance"], rtol=0.05, atol=0.05)
 
 
 def chunker(seq, size):
@@ -108,7 +105,7 @@ def processargs(arguments):
         epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
     mbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 0.1.7"
+        "-version", "--version", action="version", version="%(prog)s 0.1.8"
     )
     mbuilder.add_argument(
         "-i",
@@ -188,17 +185,19 @@ def processargs(arguments):
         dest="sort",
         action="store_true",
         default=False,
-        help="If set, will attempt to sort molecular geometries, including index permutations, w.r.t. the first structure. This can be time consuming. (default: False)",
+        help="If set, will attempt to sort molecular geometries within isomorphisms w.r.t. the first structure. This can be time consuming. (default: False)",
     )
     mbuilder.add_argument(
-        "-ts",
-        "--ts",
+        "-as",
+        "--as",
+        "-allsort",
+        "--allsort",
         "-truesort",
         "--truesort",
-        dest="truesort",
+        dest="allsort",
         action="store_true",
         default=False,
-        help="If set, will attempt to sort molecular geometries, including index permutations, in every pairwise comparison. This is extremely time consuming. (default: False)",
+        help="If set, will attempt to sort molecular geometries within isomorphisms in every pairwise comparison. This is extremely time consuming. (default: False)",
     )
     mbuilder.add_argument(
         "-efile",
@@ -320,11 +319,46 @@ def processargs(arguments):
     # Check for atom ordering and number
     sort = False
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
-        atoms_a = molecule_a.atoms
-        atoms_b = molecule_b.atoms
+        atoms_a = molecule_a.atoms_with_h
+        atoms_b = molecule_b.atoms_with_h
         if len(atoms_a) == len(atoms_b):
             if not all(atoms_a == atoms_b):
-                sort = True
+                if args.verb > 4:
+                    print(
+                        "Attempting reordering and updating molecular geometries because atom lists were not identical."
+                    )
+                dview = reorder_distance(
+                    atoms_a,
+                    atoms_b,
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h,
+                )
+                dres, _ = kabsch_rmsd(
+                    molecule_a.coordinates_with_h, molecule_b.coordinates_with_h[dview]
+                )
+                if args.verb > 4:
+                    print(f"After distance reordering, RMSD is {dres}.")
+                hview = reorder_hungarian(
+                    atoms_a,
+                    atoms_b[dview],
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h[dview],
+                )
+                hres, _ = kabsch_rmsd(
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h[dview][hview],
+                )
+                if args.verb > 4:
+                    print(f"After hungarian reordering on top of it, RMSD is {hres}.")
+                if hres < dres:
+                    molecule_b.update_with_h(
+                        atoms_b[dview][hview],
+                        molecule_b.coordinates_with_h[dview][hview],
+                    )
+                else:
+                    molecule_b.update_with_h(
+                        atoms_b[dview], molecule_b.coordinates_with_h[dview]
+                    )
         else:
             raise InputError("Molecules do not have the same number of atoms. Exiting.")
         natoms = len(atoms_b)
@@ -337,7 +371,9 @@ def processargs(arguments):
         if not dof > 0:
             raise InputError("Molecules have less than 1 degree of freedom. Exiting.")
     if args.verb > 0 and sort:
-        print("Warning! Molecule geometries are not sorted. sort set to True.")
+        print(
+            "Warning! The given molecule geometries were not sorted. Molecules have been reordered to try to fix this.\n This does not guarantee that the RMSDs will be properly calculated! If your input structures are completely shuffled, all calculated RMSD-based metrics might be bad."
+        )
 
     # Check for isomorphism
     for molecule_a, molecule_b in zip(molecules, molecules[1:]):
@@ -384,10 +420,10 @@ def processargs(arguments):
 
     if args.sort != sort:
         sort = args.sort
-    if args.truesort:
+    if args.allsort:
         if args.verb > 0:
             print(
-                "Warning! Truesort pairwise sorting is remarkably expensive. This may take a ridiculous amount of time. You may want to explore other options...."
+                "Warning! All pairs isomorphism-based sorting is remarkably expensive. This option is available for cases in which the input structures are isomorphically shuffled.\n This may take a ridiculous amount of time, as all isomorphisms must be checked, so you may want to explore other options or use a metric that does not require RMSDs."
             )
         truesort = True
         sort = True

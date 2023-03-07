@@ -21,6 +21,7 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     -------
     M : array
         (N,N) matrix
+    maxval : maximum pairwise dihedral kernel
     """
     n = len(mols)
     graphs = [mol.graph for mol in mols]
@@ -64,8 +65,8 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     else:
         M -= pairwise_kernels(DA, DA, metric=kernel)
     M = np.tril(M) + np.triu(M.T, 1)
+    maxval = np.max(M)
     if normalize:
-        maxval = np.max(M)
         M = np.abs(M) / maxval
     return M, maxval
 

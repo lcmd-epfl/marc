@@ -64,8 +64,11 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 ]
             ),
         )
-        id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
-        n_clusters = max(percentages[id_gap], 2)
+        if len(ks) == 1:
+            n_clusters = 2
+        else:
+            id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
+            n_clusters = max(percentages[id_gap], 2)
         n_unique, rank = unique_nr(m, verb=verb)
         n_clusters = min(n_unique, n_clusters)
     km = KMeans(n_clusters=n_clusters, n_init=100)
@@ -144,8 +147,11 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 ]
             ),
         )
-        id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
-        n_clusters = max(percentages[id_gap], 2)
+        if len(ks) == 1:
+            n_clusters = 2
+        else:
+            id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
+            n_clusters = max(percentages[id_gap], 2)
         n_unique, rank = unique_nr(m, verb=verb)
         n_clusters = min(n_unique, n_clusters)
     m = np.ones_like(m) - m

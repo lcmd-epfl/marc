@@ -417,6 +417,14 @@ def rotaxis(a, b):
     return c / np.linalg.norm(c)
 
 
+def at_eq(a, b):
+    return (a["atomic_number"] == b["atomic_number"]) and (a["degree"] == b["degree"])
+
+
+def b_eq(a, b):
+    return np.isclose(a["distance"], b["distance"], rtol=0.05, atol=0.05)
+
+
 def center_coordinates(coordinates, atoms):
     coordinates = com(coordinates, atoms)
     for axidx in range(2):
@@ -687,6 +695,14 @@ class Molecule:
         self.set_radii()
         self.set_am()
         self.set_graph()
+
+    def update_with_h(self, atoms_with_h, coordinates_with_h):
+        self.atoms_with_h = atoms_with_h
+        self.coordinates_with_h = center_coordinates(coordinates_with_h, atoms_with_h)
+        self.update(
+            atoms_with_h[np.where(atoms_with_h > 1)],
+            coordinates_with_h[np.where(atoms_with_h > 1)],
+        )
 
     def __iter__(self):
         for value in [

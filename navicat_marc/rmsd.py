@@ -20,6 +20,7 @@ def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
     -------
     M : array
         (N,N) matrix
+    maxval : maximum pairwise RMSD
     """
     n = len(mols)
     M = np.zeros((n, n))
@@ -40,43 +41,44 @@ def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
                 min_res = np.inf
                 for k, (ibi, ibj) in enumerate(iviews):
                     ibi, ibj = ibi[ibi.argsort()], ibj[ibi.argsort()]
-                    res = rmsd(mols[i].coordinates, mols[j].coordinates[ibj])
+                    res, rotated_coordinates = kabsch_rmsd(
+                        mols[i].coordinates, mols[j].coordinates[ibj]
+                    )
                     if res < min_res:
                         save_ibj = ibj
                         min_res = res
+                        save_rotated_coordinates = rotated_coordinates
                     if np.isclose(0, min_res):
-                        save_ibj = ibj
                         break
                 pos_ibj.append(save_ibj)
-                res, rotated_coordinates = kabsch_rmsd(
-                    mols[i].coordinates, mols[j].coordinates[save_ibj]
-                )
-                mols[j].update(mols[j].atoms[save_ibj], rotated_coordinates)
-                M[i, j] = M[j, i] = res
+                assert all(mols[i].atoms == mols[j].atoms[save_ibj])
+                mols[j].update(mols[j].atoms[save_ibj], save_rotated_coordinates)
+                M[i, j] = M[j, i] = min_res
             if not sort and len(pos_ibj) > 0:
                 for k, ibj in enumerate(pos_ibj):
-                    res = rmsd(mols[i].coordinates, mols[j].coordinates[ibj])
+                    res, rotated_coordinates = kabsch_rmsd(
+                        mols[i].coordinates, mols[j].coordinates[ibj]
+                    )
                     if res < min_res:
                         save_ibj = ibj
                         min_res = res
+                        save_rotated_coordinates = rotated_coordinates
                     if np.isclose(0, min_res):
-                        save_ibj = ibj
                         break
-                res, rotated_coordinates = kabsch_rmsd(
-                    mols[i].coordinates, mols[j].coordinates[save_ibj]
-                )
-                mols[j].update(mols[j].atoms[save_ibj], rotated_coordinates)
-                M[i, j] = M[j, i] = res
+                assert all(mols[i].atoms == mols[j].atoms[save_ibj])
+                mols[j].update(mols[j].atoms[save_ibj], save_rotated_coordinates)
+                M[i, j] = M[j, i] = min_res
             if not sort and len(pos_ibj) == 0:
                 res, rotated_coordinates = kabsch_rmsd(
                     mols[i].coordinates, mols[j].coordinates
                 )
+                assert all(mols[i].atoms == mols[j].atoms)
                 mols[j].update(mols[j].atoms, rotated_coordinates)
                 M[i, j] = M[j, i] = res
         if not truesort:
             sort = False
+    maxval = np.max(M)
     if normalize:
-        maxval = np.max(M)
         M = np.abs(M) / maxval
     return M, maxval
 
@@ -369,3 +371,55 @@ def hungarian(A, B):
     indices_a, indices_b = linear_sum_assignment(distances)
 
     return indices_b
+
+
+def reorder_distance(
+    p_atoms,
+    q_atoms,
+    p_coord,
+    q_coord,
+):
+    """
+    Re-orders the input atom list and xyz coordinates by atom type and then by
+    distance of each atom from the centroid.
+    Parameters
+    ----------
+    atoms : array
+        (N,1) matrix, where N is points holding the atoms' names
+    coord : array
+        (N,D) matrix, where N is points and D is dimension
+    Returns
+    -------
+    atoms_reordered : array
+        (N,1) matrix, where N is points holding the ordered atoms' names
+    coords_reordered : array
+        (N,D) matrix, where N is points and D is dimension (rows re-ordered)
+    """
+
+    # Find unique atoms
+    unique_atoms = np.unique(p_atoms)
+
+    # generate full view from q shape to fill in atom view on the fly
+    view_reorder = np.zeros(q_atoms.shape, dtype=int)
+
+    for atom in unique_atoms:
+
+        (p_atom_idx,) = np.where(p_atoms == atom)
+        (q_atom_idx,) = np.where(q_atoms == atom)
+
+        A_coord = p_coord[p_atom_idx]
+        B_coord = q_coord[q_atom_idx]
+
+        # Calculate distance from each atom to centroid
+        A_norms = np.linalg.norm(A_coord, axis=1)
+        B_norms = np.linalg.norm(B_coord, axis=1)
+
+        reorder_indices_A = np.argsort(A_norms)
+        reorder_indices_B = np.argsort(B_norms)
+
+        # Project the order of P onto Q
+        translator = np.argsort(reorder_indices_A)
+        view = reorder_indices_B[translator]
+        view_reorder[p_atom_idx] = q_atom_idx[view]
+
+    return view_reorder

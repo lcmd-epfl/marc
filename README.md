@@ -33,12 +33,12 @@ pip install navicat_marc
 Afterwards, you can call marc as:
 
 ```python 
-python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-ts] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 or simply
 
 ```python 
-navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-ts] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Alternatively, you can download the package and execute:
@@ -50,12 +50,12 @@ python setup.py install
 Afterwards, you can call marc as:
 
 ```python 
-python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-ts] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 or
 
 ```python 
-navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-ts] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Options can be consulted using the `-h` flag in either case. The help menu is quite detailed. 

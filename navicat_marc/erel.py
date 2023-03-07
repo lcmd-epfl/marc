@@ -16,7 +16,7 @@ def erel_matrix(mols, normalize=True):
     -------
     M : array
         (N,N) matrix
-    max : maximum relative energy difference
+    maxval : maximum relative energy difference
     """
     energies = np.array([mol.energy for mol in mols])
     n = len(mols)
@@ -24,7 +24,7 @@ def erel_matrix(mols, normalize=True):
     for i in range(0, n - 1):
         for j in range(i + 1, n):
             M[i, j] = M[j, i] = np.abs(energies[i] - energies[j])
+    maxval = np.max(np.abs(M))
     if normalize:
-        maxval = np.max(np.abs(M))
         M = np.abs(M) / maxval
     return M, maxval
