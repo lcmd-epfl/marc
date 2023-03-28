@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics.pairwise import pairwise_kernels
 
 
-def da_matrix(mols, normalize=True, kernel="rbf"):
+def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     """
     Compute pairwise main dihedral matrix between all molecules in mols.
 
@@ -13,11 +13,15 @@ def da_matrix(mols, normalize=True, kernel="rbf"):
     Parameters
     ----------
     mols : list of N molecule objects
+    normalize : whether to normalize the matrix or not
+    kernel : kernel flavor to process the dihedral angle lists into a pairwise metric
+    mode : how to choose the indexing used to traverse the molecular graph
 
     Returns
     -------
     M : array
         (N,N) matrix
+    maxval : maximum pairwise dihedral kernel
     """
     n = len(mols)
     graphs = [mol.graph for mol in mols]
@@ -25,28 +29,46 @@ def da_matrix(mols, normalize=True, kernel="rbf"):
     natoms = len(mols[0].atoms)
     M = np.ones((n, n))
     if natoms > 4:
-        n_d = max(natoms // 4, 10)
+        n_d = max(natoms // 4, 1)
     else:
         return M
     DA = np.zeros((n, n_d))
     coords = np.array([mol.coordinates for mol in mols])
 
     # All molecules share the same connectivity (at least in principle)
-    bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
-    all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
-    for i in range(n):
-        for d in range(n_d - 1):
-            k = 4 * d
-            l = 4 * (d + 1)
-            a0, a1, a2, a3 = coords[i][all_indices[k:l]]
-            DA[i, d] = dihedral(a0, a1, a2, a3)
-    if kernel is "rbf":
+    # Lets traverse the graph and collect dihedrals
+    if mode == "auto":
+        bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
+        all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
+        for i in range(n):
+            for d in range(n_d - 1):
+                k = 4 * d
+                l = 4 * (d + 1)
+                a0, a1, a2, a3 = coords[i][all_indices[k:l]]
+                DA[i, d] = dihedral(a0, a1, a2, a3)
+    elif mode == "dfs":
+        dfs_nodes = list(nx.dfs_preorder_nodes(refgraph, source=0))
+        n_d = max(len(dfs_nodes) // 4, 1)
+        for i in range(n):
+            for d in range(n_d - 1):
+                k = 4 * d
+                l = 4 * (d + 1)
+                a0, a1, a2, a3 = coords[i][dfs_nodes[k:l]]
+                DA[i, d] = dihedral(a0, a1, a2, a3)
+    else:
+        return M
+    # Now generate a kernel based on the dihedrals
+    if kernel == "rbf":
         euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
-        gamma_heuristic = 1 / (0.5 * euclid_0.std())
+        gamma_heuristic = 1 / (euclid_0.std())
         M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
     else:
         M -= pairwise_kernels(DA, DA, metric=kernel)
-    return M
+    M = np.tril(M) + np.triu(M.T, 1)
+    maxval = np.max(M)
+    if normalize:
+        M = np.abs(M) / maxval
+    return M, maxval
 
 
 def delta_dihedral(indices, P, Q):

@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 import re
+from os.path import dirname
 
 import networkx as nx
 import numpy as np
 import scipy.spatial
 
-from marc.exceptions import InputError
+from navicat_marc.exceptions import InputError
 
 ha_to_kcalmol = 627.509
+kcalmol_to_ha = 0.00159360
 
 symbol_to_number = {
     "Em": 0,  # empty site
@@ -130,6 +132,126 @@ symbol_to_number = {
 }
 
 number_to_symbol = {v: k for k, v in symbol_to_number.items()}
+
+symbol_to_mass = {
+    "Em": 0.000,
+    "Va": 0.000,
+    "Vc": 0.000,
+    "H": 1.0075,
+    "D": 2.01410178,
+    "He": 4.002,
+    "Li": 6.9675,
+    "Be": 9.012,
+    "B": 10.8135,
+    "C": 12.0106,
+    "N": 14.0065,
+    "O": 15.999,
+    "F": 18.998,
+    "Ne": 20.1797,
+    "Na": 22.989,
+    "Mg": 24.3050,
+    "Al": 26.981,
+    "Si": 28.085,
+    "P": 30.973,
+    "S": 32.0675,
+    "Cl": 35.4515,
+    "Ar": 39.948,
+    "K": 39.0983,
+    "Ca": 40.078,
+    "Sc": 44.955,
+    "Ti": 47.867,
+    "V": 50.9415,
+    "Cr": 51.9961,
+    "Mn": 54.938,
+    "Fe": 55.845,
+    "Co": 58.933,
+    "Ni": 58.6934,
+    "Cu": 63.546,
+    "Zn": 65.38,
+    "Ga": 69.723,
+    "Ge": 72.63,
+    "As": 74.921,
+    "Se": 78.96,
+    "Br": 79.904,
+    "Kr": 83.798,
+    "Rb": 85.4678,
+    "Sr": 87.62,
+    "Y": 88.905,
+    "Zr": 91.224,
+    "Nb": 92.906,
+    "Mo": 95.96,
+    "Tc": 98,
+    "Ru": 101.07,
+    "Rh": 102.905,
+    "Pd": 106.42,
+    "Ag": 107.8682,
+    "Cd": 112.411,
+    "In": 114.818,
+    "Sn": 118.710,
+    "Sb": 121.760,
+    "Te": 127.60,
+    "I": 126.904,
+    "Xe": 131.293,
+    "Cs": 132.905,
+    "Ba": 137.327,
+    "La": 138.905,
+    "Ce": 140.116,
+    "Pr": 140.907,
+    "Nd": 144.242,
+    "Pm": 145,
+    "Sm": 150.36,
+    "Eu": 151.964,
+    "Gd": 157.25,
+    "Tb": 158.925,
+    "Dy": 162.500,
+    "Ho": 164.930,
+    "Er": 167.259,
+    "Tm": 168.934,
+    "Yb": 173.054,
+    "Lu": 174.9668,
+    "Hf": 178.49,
+    "Ta": 180.947,
+    "W": 183.84,
+    "Re": 186.207,
+    "Os": 190.23,
+    "Ir": 192.217,
+    "Pt": 195.084,
+    "Au": 196.966,
+    "Hg": 200.59,
+    "Tl": 204.3835,
+    "Pb": 207.2,
+    "Bi": 208.980,
+    "Po": 209,
+    "At": 210,
+    "Rn": 222,
+    "Fr": 223,
+    "Ra": 226,
+    "Ac": 227,
+    "Th": 232.038,
+    "Pa": 231.035,
+    "U": 238.028,
+    "Np": 237,
+    "Pu": 244,
+    "Am": 243,
+    "Cm": 247,
+    "Bk": 247,
+    "Cf": 251,
+    "Es": 252,
+    "Fm": 257,
+    "Md": 258,
+    "No": 259,
+    "Lr": 262,
+    "Rf": 267,
+    "Db": 268,
+    "Sg": 271,
+    "Bh": 272,
+    "Hs": 270,
+    "Mt": 276,
+    "Ds": 281,
+    "Rg": 280,
+    "Cn": 285,
+}
+
 
 missing = 0.2
 covalent_radii = np.array(
@@ -257,6 +379,65 @@ covalent_radii = np.array(
 )
 
 
+def com(coordinates, atoms):
+    masses = np.array([symbol_to_mass[number_to_symbol[a]] for a in atoms], dtype=float)
+    com = np.sum(np.multiply(masses[:, np.newaxis], coordinates)) / np.sum(masses)
+    return coordinates - com
+
+
+def calc_pmoi(coordinates, atoms):
+    x, y, z = coordinates.T
+    masses = np.array([symbol_to_mass[number_to_symbol[a]] for a in atoms], dtype=float)
+    Ixx = np.sum(masses * (y**2 + z**2))
+    Iyy = np.sum(masses * (x**2 + z**2))
+    Izz = np.sum(masses * (x**2 + y**2))
+    Ixy = -np.sum(masses * x * y)
+    Iyz = -np.sum(masses * y * z)
+    Ixz = -np.sum(masses * x * z)
+    I0 = np.array([[Ixx, Ixy, Ixz], [Ixy, Iyy, Iyz], [Ixz, Iyz, Izz]])
+    I, V = np.linalg.eig(I0)
+    idx = np.argsort(-I)
+    return V[:, idx].T
+
+
+def unit_vector(vec):
+    return vec / np.linalg.norm(vec)
+
+
+def angle_between(v1, v2):
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+def rotaxis(a, b):
+    if np.allclose(a, b):
+        return np.array([1, 0, 0])
+    c = np.cross(a, b)
+    return c / np.linalg.norm(c)
+
+
+def at_eq(a, b):
+    return (a["atomic_number"] == b["atomic_number"]) and (a["degree"] == b["degree"])
+
+
+def b_eq(a, b):
+    return np.isclose(a["distance"], b["distance"], rtol=0.05, atol=0.05)
+
+
+def center_coordinates(coordinates, atoms):
+    coordinates = com(coordinates, atoms)
+    for axidx in range(2):
+        pmoi = calc_pmoi(coordinates, atoms)
+        axis_vector = np.zeros(3)
+        axis_vector[axidx] = 1
+        theta = angle_between(pmoi[axidx], axis_vector)
+        ax = rotaxis(pmoi[axidx], axis_vector)
+        rot = scipy.spatial.transform.Rotation.from_rotvec(ax, theta)
+        coordinates = rot.apply(coordinates)
+    return coordinates
+
+
 class Molecule:
     def __init__(
         self,
@@ -266,7 +447,7 @@ class Molecule:
         filename=None,
         lines=None,
         radii=None,
-        scale_factor=1.2,
+        scale_factor=1.10,
         noh=True,
     ):
         self.scale_factor = scale_factor
@@ -277,7 +458,7 @@ class Molecule:
             self.from_lines(lines, noh)
         else:
             self.atoms = atoms
-            self.coordinates = coordinates
+            self.coordinates = center_coordinates(coordinates, atoms)
             if self.radii is None and self.atoms is not None:
                 self.set_radii()
             else:
@@ -301,10 +482,30 @@ class Molecule:
 
         # The title line may contain an energy
         title = f.readline().strip()
-        try:
-            energy = float(title) * ha_to_kcalmol
-        except ValueError:
-            energy = None
+        energy = None
+        if "energy:" in title and energy is None:
+            try:
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
+        if "Eopt" in title and energy is None:
+            try:
+                etitle = title.split("Eopt")[-1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
+        if energy is None:
+            try:
+                energy = float(title) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(f):
@@ -331,7 +532,7 @@ class Molecule:
 
         f.close()
         atoms = np.array(atoms, dtype=int)
-        V = np.array(V)
+        V = center_coordinates(np.array(V), atoms)
         self.title = title
         self.coordinates_with_h = V
         self.atoms_with_h = atoms
@@ -363,10 +564,30 @@ class Molecule:
 
         # The title line may contain an energy
         title = next(lines_iter).strip()
-        try:
-            energy = float(title) * ha_to_kcalmol
-        except ValueError:
-            energy = None
+        energy = None
+        if "energy:" in title and energy is None:
+            try:
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
+        if "Eopt" in title and energy is None:
+            try:
+                etitle = title.split("Eopt")[-1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
+        if energy is None:
+            try:
+                energy = float(title) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(lines_iter):
@@ -390,7 +611,7 @@ class Molecule:
                 )
 
         atoms = np.array(atoms, dtype=int)
-        V = np.array(V)
+        V = center_coordinates(np.array(V), atoms)
         self.title = title
         self.coordinates_with_h = V
         self.atoms_with_h = atoms
@@ -429,17 +650,27 @@ class Molecule:
         nx.set_node_attributes(G, coord_dict, "coordinates")
         ds = np.zeros((len(G.edges())))
         cs = np.zeros_like(ds)
+        idxs_1 = []
+        idxs_2 = []
         for i, edge in enumerate(G.edges()):
             ds[i] = np.linalg.norm(
                 self.coordinates[edge[0]] - self.coordinates[edge[1]]
             )
             cs[i] = self.atoms[edge[0]] * self.atoms[edge[1]] / ds[i] ** 2
+            idxs_1.append(edge[0])
+            idxs_2.append(edge[0])
         b_dict = nx.edge_betweenness_centrality(G, normalized=False)
         d_dict = {edge: d for edge, d in zip(b_dict.keys(), ds)}
         c_dict = {edge: c for edge, c in zip(b_dict.keys(), cs)}
+        i1_dict = {edge: i for edge, i in zip(b_dict.keys(), idxs_1)}
+        i2_dict = {edge: i for edge, i in zip(b_dict.keys(), idxs_2)}
+        degree_dict = {i: val for (i, val) in G.degree()}
+        nx.set_node_attributes(G, degree_dict, "degree")
         nx.set_edge_attributes(G, b_dict, "betweenness")
         nx.set_edge_attributes(G, d_dict, "distance")
         nx.set_edge_attributes(G, c_dict, "coulomb_term")
+        nx.set_edge_attributes(G, i1_dict, "idx_1")
+        nx.set_edge_attributes(G, i2_dict, "idx_2")
         self.graph = G
 
     def write(self, rootname="output"):
@@ -447,15 +678,31 @@ class Molecule:
         f = open(filename, "w+")
         print(f"{len(self.atoms_with_h)}", file=f)
         if self.energy is not None:
-            print(f"{self.energy}", file=f)
+            printable_energy = np.round(self.energy * kcalmol_to_ha, decimals=6)
+            print(f"{printable_energy}", file=f)
         else:
             print(f"{self.title}", file=f)
         for i, atom in enumerate(self.atoms_with_h):
             print(
-                f"{number_to_symbol[atom]}    {self.coordinates_with_h[i][0]}    {self.coordinates_with_h[i][1]}    {self.coordinates_with_h[i][2]}",
+                f"{number_to_symbol[atom]:2}    {np.round(self.coordinates_with_h[i][0],decimals=6): }    {np.round(self.coordinates_with_h[i][1],decimals=6): }    {np.round(self.coordinates_with_h[i][2],decimals=6): }",
                 file=f,
             )
         f.close()
+
+    def update(self, atoms, coordinates):
+        self.atoms = atoms
+        self.coordinates = coordinates
+        self.set_radii()
+        self.set_am()
+        self.set_graph()
+
+    def update_with_h(self, atoms_with_h, coordinates_with_h):
+        self.atoms_with_h = atoms_with_h
+        self.coordinates_with_h = center_coordinates(coordinates_with_h, atoms_with_h)
+        self.update(
+            atoms_with_h[np.where(atoms_with_h > 1)],
+            coordinates_with_h[np.where(atoms_with_h > 1)],
+        )
 
     def __iter__(self):
         for value in [
@@ -469,7 +716,7 @@ class Molecule:
             yield value
 
 
-def test_compare_origin(path="marc/test_files/"):
+def test_compare_origin(path=f"{dirname(__file__)}/test_files/"):
     chunk_a = [
         "19",
         "(2S)-2-Amino-3-methylbutanoic acid",
@@ -587,7 +834,7 @@ def test_molecule_from_lines():
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_from_file(path="marc/test_files/"):
+def test_molecule_from_file(path=f"{dirname(__file__)}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
@@ -600,7 +847,7 @@ def test_molecule_from_file(path="marc/test_files/"):
         assert nx.is_connected(a.graph)
 
 
-def test_molecule_to_file(path="marc/test_files/"):
+def test_molecule_to_file(path=f"{dirname(__file__)}/test_files/"):
     filenames = [
         "L-Valine.xyz",
         "Benzaldehyde.xyz",
