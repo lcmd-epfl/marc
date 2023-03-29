@@ -10,7 +10,7 @@ import scipy.cluster.hierarchy
 import scipy.cluster.vq
 from scipy.spatial.distance import euclidean, squareform
 from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
-from sklearn.manifold import MDS
+from sklearn.manifold import MDS, TSNE
 from sklearn.neighbors import NearestCentroid
 
 from navicat_marc.exceptions import UniqueError
@@ -32,6 +32,35 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     if verb > 0:
         print(f"Saving dendrogram plot as {label}_dendrogram.png in working directory.")
     plt.savefig(f"{label}_dendrogram.png")
+    plt.close()
+
+
+def plot_tsne(m: np.ndarray, points, clusters):
+
+    # Generate tsne plot
+    tsne = TSNE(n_components=2, metric="precomputed", init="random", perplexity=min(len(points), 50))
+    tsne_results = tsne.fit_transform(m)
+
+    # Plot tsne results
+    fig, ax = plt.subplots(figsize=(10, 10))
+    for i, indices_list in enumerate(clusters):
+        ax.scatter(
+            tsne_results[indices_list, 0],
+            tsne_results[indices_list, 1],
+            label=f"Cluster {i}",
+            alpha=0.7,
+        )
+    for i in points:
+        ax.scatter(
+            tsne_results[i, 0],
+            tsne_results[i, 1],
+            marker="x",
+            s=200,
+            linewidths=3,
+            label=f"Cluster {i}",
+        )
+    ax.legend()
+    plt.savefig("tsne_plot.png")
     plt.close()
 
 
@@ -64,7 +93,7 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 ]
             ),
         )
-        if len(ks) == 1:
+        if len(percentages) == 1:
             n_clusters = 2
         else:
             id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
@@ -98,6 +127,7 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
+    plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
@@ -125,6 +155,7 @@ def affprop_clustering(m, verb=0):
                 f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]:02}"
             )
         closest_pt_idx.append(ap.cluster_centers_indices_[iclust])
+    plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
@@ -147,7 +178,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 ]
             ),
         )
-        if len(ks) == 1:
+        if len(percentages) == 1:
             n_clusters = 2
         else:
             id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
@@ -187,6 +218,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
+    plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
