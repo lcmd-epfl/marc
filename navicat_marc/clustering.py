@@ -38,7 +38,12 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
 def plot_tsne(m: np.ndarray, points, clusters):
 
     # Generate tsne plot
-    tsne = TSNE(n_components=2, metric="precomputed", init="random", perplexity=min(len(points), 50))
+    tsne = TSNE(
+        n_components=2,
+        metric="precomputed",
+        init="random",
+        perplexity=min(len(points), 50),
+    )
     tsne_results = tsne.fit_transform(m)
 
     # Plot tsne results

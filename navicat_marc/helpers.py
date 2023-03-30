@@ -33,6 +33,7 @@ def long_substr(data):
 valid_c = ["kmeans", "agglomerative", "affprop"]
 valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
 
+
 def yesno(question):
     """Simple Yes/No Function."""
     prompt = f"{question} ? (y/n): "
@@ -318,6 +319,10 @@ def processargs(arguments):
             raise InputError(
                 f"The number of molecules ({len(molecules)}) and energies ({len(energies)}) in file {filename} does not match. Exiting."
             )
+
+    # Check for number of molecules
+    if len(molecules) < 3:
+        raise InputError("Less than three molecules provided. Exiting.")
 
     # Check for atom ordering and number
     sort = False
