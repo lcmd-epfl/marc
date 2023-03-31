@@ -9,8 +9,8 @@ from navicat_marc.clustering import (
     agglomerative_clustering,
     kmeans_clustering,
     plot_dendrogram,
-    unique_nm,
     plot_tsne,
+    unique_nm,
 )
 from navicat_marc.da import da_matrix
 from navicat_marc.distatis import run_distatis

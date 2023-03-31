@@ -5,6 +5,8 @@ import numpy as np
 
 matplotlib.use("Agg")
 
+from itertools import cycle
+
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
 import scipy.cluster.vq
@@ -12,7 +14,6 @@ from scipy.spatial.distance import euclidean, squareform
 from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
 from sklearn.manifold import MDS, TSNE
 from sklearn.neighbors import NearestCentroid
-from itertools import cycle
 
 from navicat_marc.exceptions import UniqueError
 
@@ -62,30 +63,31 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
 
     # Plot tsne results
     fig, ax = plt.subplots(
-        frameon=False, figsize=[4.2, 4.2], dpi=300, constrained_layout=True
+        frameon=False,
+        figsize=[4.2, 4.2],
+        dpi=300,
     )
     ax = beautify_ax(ax)
     cycol = cycle("bgrcmky")
-    cdict = dict(zip(type_tags, cycol))
-    cb = np.array([cdict[i] for i in clusters])
+    cdict = dict(zip(points, cycol))
+    cb = np.array([cdict[i] for i in points])
     for i, indices_list in enumerate(clusters):
         ax.scatter(
             tsne_results[indices_list, 0],
             tsne_results[indices_list, 1],
-            s=40,
+            s=50,
             edgecolors="black",
             zorder=1,
-            alpha=0.7,
+            alpha=0.5,
             c=cb[i],
             label=f"Cluster {i}",
         )
-    for i in points:
+    for i, index in enumerate(points):
         ax.scatter(
             tsne_results[i, 0],
             tsne_results[i, 1],
             marker="X",
-            s=50,
-            linewidths=2,
+            s=30,
             edgecolors="black",
             zorder=2,
             c=cb[i],
@@ -258,7 +260,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 

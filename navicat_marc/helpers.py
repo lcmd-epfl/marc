@@ -10,7 +10,7 @@ import numpy as np
 
 from navicat_marc.exceptions import InputError
 from navicat_marc.molecule import Molecule, at_eq, b_eq
-from navicat_marc.rmsd import reorder_hungarian, reorder_distance, kabsch_rmsd
+from navicat_marc.rmsd import kabsch_rmsd, reorder_distance, reorder_hungarian
 
 
 def long_substr(data):
