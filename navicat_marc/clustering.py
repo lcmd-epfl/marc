@@ -71,7 +71,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
     ax = beautify_ax(ax)
     col = ["b", "g", "r", "c", "m", "k", "y"]
     mar = ["o", "v", "^", "s", "p", "h", "P", "D", "*", ">", "<"]
-    cy_col_mar = cycle(product(col, mar))
+    cy_col_mar = cycle(product(mar, col))
     cmdict = dict(zip(points, cy_col_mar))
     cmb = np.array([cmdict[i] for i in points])
     for i, indices_list in enumerate(clusters):
@@ -82,8 +82,8 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
             edgecolors="black",
             zorder=1,
             alpha=0.5,
-            c=cmb[i][0],
-            marker=cmb[i][1],
+            c=cmb[i][1],
+            marker=cmb[i][0],
             label=f"Cluster {i}",
         )
     for i, index in enumerate(points):
@@ -93,7 +93,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
             s=30,
             edgecolors="black",
             zorder=2,
-            c=cmb[i][0],
+            c=cmb[i][1],
             marker="X",
             label=f"{names[index]}",
         )
