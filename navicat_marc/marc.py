@@ -125,7 +125,7 @@ def run_marc():
     if c == "affprop":
         indices, clusters = affprop_clustering(A, verb)
 
-    # Make sure no duplicates remain. Sometimes an issue with kmeans and were not filtered before
+    # Make sure no duplicates remain
 
     curr_n = len(indices)
     effA = A[indices, :][:, indices]
@@ -225,14 +225,24 @@ def run_marc():
                     )
                 rejected[i] = 1
 
+    # Output name generation
+    outnames = [molecule.name for molecule in molecules]
+    if None in outnames:
+        if l < 2:
+            outnames = [f"{basename}_{idx}" for idx in range(l)]
+        elif l < 3:
+            outnames = [f"{basename}_{idx:02}" for idx in range(l)]
+        else:
+            outnames = [f"{basename}_{idx:04}" for idx in range(l)]
+
     # Write the indices (representative molecules) that were accepted and rejected
 
     if ewin is not None:
         for i, idx in enumerate(indices):
             if rejected[i]:
-                molecules[idx].write(f"{basename}_rejected_{idx:02}")
+                molecules[idx].write(f"{outnames[idx]}_rejected")
             if not rejected[i]:
-                molecules[idx].write(f"{basename}_selected_{idx:02}")
+                molecules[idx].write(f"{outnames[idx]}_accepted")
     else:
         for i, idx in enumerate(indices):
-            molecules[idx].write(f"{basename}_selected_{idx:02}")
+            molecules[idx].write(f"{outnames[idx]}_accepted")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import re
-from os.path import dirname
+from os.path import dirname, splitext
 
 import networkx as nx
 import numpy as np
@@ -445,6 +445,7 @@ class Molecule:
         coordinates=None,
         energy=None,
         filename=None,
+        name=None,
         lines=None,
         radii=None,
         scale_factor=1.10,
@@ -453,6 +454,7 @@ class Molecule:
         self.scale_factor = scale_factor
         self.radii = radii
         if filename is not None:
+            self.name = splitext(filename)[0]
             self.from_file(filename, noh)
         elif lines is not None:
             self.from_lines(lines, noh)

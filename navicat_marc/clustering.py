@@ -35,6 +35,19 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     plt.close()
 
 
+def beautify_ax(ax):
+    # Border
+    ax.spines["top"].set_color("black")
+    ax.spines["bottom"].set_color("black")
+    ax.spines["left"].set_color("black")
+    ax.spines["right"].set_color("black")
+    ax.get_xaxis().set_tick_params(direction="out")
+    ax.get_yaxis().set_tick_params(direction="out")
+    ax.xaxis.tick_bottom()
+    ax.yaxis.tick_left()
+    return ax
+
+
 def plot_tsne(m: np.ndarray, points, clusters):
 
     # Generate tsne plot
@@ -42,26 +55,34 @@ def plot_tsne(m: np.ndarray, points, clusters):
         n_components=2,
         metric="precomputed",
         init="random",
-        perplexity=min(len(points), 50),
+        perplexity=min(len(points) / len(clusters), 50),
     )
     tsne_results = tsne.fit_transform(m)
 
     # Plot tsne results
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(
+        frameon=False, figsize=[4, 4], dpi=300, constrained_layout=True
+    )
+    ax = beautify_ax(ax)
     for i, indices_list in enumerate(clusters):
         ax.scatter(
             tsne_results[indices_list, 0],
             tsne_results[indices_list, 1],
-            label=f"Cluster {i}",
+            s=30,
+            edgecolors="black",
+            zorder=1,
             alpha=0.7,
+            label=f"Cluster {i}",
         )
     for i in points:
         ax.scatter(
             tsne_results[i, 0],
             tsne_results[i, 1],
             marker="x",
-            s=200,
-            linewidths=3,
+            s=40,
+            linewidths=2,
+            edgecolors="black",
+            zorder=2,
             label=f"Cluster {i}",
         )
     ax.legend()
@@ -192,7 +213,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
         n_clusters = min(n_unique, n_clusters)
     m = np.ones_like(m) - m
     ac = AgglomerativeClustering(
-        n_clusters=n_clusters, affinity="precomputed", linkage="single"
+        n_clusters=n_clusters, metric="precomputed", linkage="single"
     )
     cm = ac.fit_predict(m)
     clf = NearestCentroid()
