@@ -57,6 +57,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         n_components=2,
         metric="precomputed",
         init="random",
+        early_exaggeration=50.0,
         perplexity=min(len(points) / len(clusters), 50),
     )
     tsne_results = tsne.fit_transform(m)
@@ -84,14 +85,14 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         )
     for i, index in enumerate(points):
         ax.scatter(
-            tsne_results[i, 0],
-            tsne_results[i, 1],
+            tsne_results[index, 0],
+            tsne_results[index, 1],
             marker="X",
             s=30,
             edgecolors="black",
             zorder=2,
             c=cb[i],
-            label=f"{names[i]}",
+            label=f"{names[index]}",
         )
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
@@ -102,7 +103,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         shadow=True,
         ncol=len(clusters),
     )
-    plt.savefig("tsne_plot.png")
+    plt.savefig("tsne_plot.png", bbox_inches="tight")
     plt.close()
 
 
