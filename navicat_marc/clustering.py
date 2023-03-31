@@ -61,7 +61,7 @@ def plot_tsne(m: np.ndarray, points, clusters):
 
     # Plot tsne results
     fig, ax = plt.subplots(
-        frameon=False, figsize=[4, 4], dpi=300, constrained_layout=True
+        frameon=False, figsize=[8, 8], dpi=300, constrained_layout=True
     )
     ax = beautify_ax(ax)
     for i, indices_list in enumerate(clusters):
@@ -85,7 +85,15 @@ def plot_tsne(m: np.ndarray, points, clusters):
             zorder=2,
             label=f"Cluster {i}",
         )
-    ax.legend()
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.05),
+        fancybox=True,
+        shadow=True,
+        ncol=len(clusters),
+    )
     plt.savefig("tsne_plot.png")
     plt.close()
 
