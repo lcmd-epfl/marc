@@ -69,7 +69,37 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         dpi=300,
     )
     ax = beautify_ax(ax)
-    col = ["b", "g", "r", "c", "m", "k", "y"]
+    col = [
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "k",
+        "y",
+        "plum",
+        "pink",
+        "gold",
+        "crimson",
+        "yellowgreen",
+        "teal",
+        "violet",
+        "salmon",
+        "sienna",
+        "silver",
+        "tan",
+        "wheat",
+        "ivory",
+        "darkgreen",
+        "coral",
+        "darkblue",
+        "orange",
+        "olive",
+        "lightgreen",
+        "lightblue",
+        "aquamarine",
+        "orchid",
+    ]
     mar = ["o", "v", "^", "s", "p", "h", "P", "D", "*", ">", "<"]
     cy_col_mar = cycle(product(mar, col))
     cmdict = dict(zip(points, cy_col_mar))
