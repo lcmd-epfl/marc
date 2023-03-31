@@ -229,7 +229,7 @@ def run_marc():
     # Output name generation
     outnames = [molecule.name for molecule in molecules]
     if None in outnames:
-        p = min(np.floor(l / 10), 1) + 1
+        format_string = f"0{min(np.floor(l / 10), 1) + 1}"
         outnames = [f"{basename}_{idx:{format_string}}" for idx in range(l)]
 
     # Plot tsne
