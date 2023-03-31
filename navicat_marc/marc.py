@@ -229,12 +229,8 @@ def run_marc():
     # Output name generation
     outnames = [molecule.name for molecule in molecules]
     if None in outnames:
-        if l < 2:
-            outnames = [f"{basename}_{idx}" for idx in range(l)]
-        elif l < 3:
-            outnames = [f"{basename}_{idx:02}" for idx in range(l)]
-        else:
-            outnames = [f"{basename}_{idx:04}" for idx in range(l)]
+        p = min(np.floor(l / 10), 1) + 1
+        outnames = [f"{basename}_{idx:{format_string}}" for idx in range(l)]
 
     # Plot tsne
     plot_tsne(A, indices, clusters, outnames)

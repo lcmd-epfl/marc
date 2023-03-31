@@ -5,7 +5,7 @@ import numpy as np
 
 matplotlib.use("Agg")
 
-from itertools import cycle
+from itertools import cycle, product
 
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
@@ -57,8 +57,8 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         n_components=2,
         metric="precomputed",
         init="random",
-        early_exaggeration=50.0,
-        perplexity=min(len(points) / len(clusters), 50),
+        early_exaggeration=20.0,
+        perplexity=min(int(len(points) / np.sqrt(len(clusters))), 50),
     )
     tsne_results = tsne.fit_transform(m)
 
@@ -69,8 +69,10 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         dpi=300,
     )
     ax = beautify_ax(ax)
-    cycol = cycle("bgrcmky")
-    cdict = dict(zip(points, cycol))
+    col = ["b", "g", "r", "c", "m", "k", "y"]
+    mar = ["o", "v", "^", "s", "p", "h", "P", "D", "*", ">", "<"]
+    cy_col_mar = cycle(product(col, mar))
+    cdict = dict(zip(points, cy_col_mar))
     cb = np.array([cdict[i] for i in points])
     for i, indices_list in enumerate(clusters):
         ax.scatter(
@@ -80,18 +82,19 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
             edgecolors="black",
             zorder=1,
             alpha=0.5,
-            c=cb[i],
+            c=cb[i][0],
+            marker=mb[i][1],
             label=f"Cluster {i}",
         )
     for i, index in enumerate(points):
         ax.scatter(
             tsne_results[index, 0],
             tsne_results[index, 1],
-            marker="X",
             s=30,
             edgecolors="black",
             zorder=2,
-            c=cb[i],
+            c=cb[i][0],
+            marker="X",
             label=f"{names[index]}",
         )
     box = ax.get_position()
