@@ -12,6 +12,7 @@ from scipy.spatial.distance import euclidean, squareform
 from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
 from sklearn.manifold import MDS, TSNE
 from sklearn.neighbors import NearestCentroid
+from itertools import cycle
 
 from navicat_marc.exceptions import UniqueError
 
@@ -48,7 +49,7 @@ def beautify_ax(ax):
     return ax
 
 
-def plot_tsne(m: np.ndarray, points, clusters):
+def plot_tsne(m: np.ndarray, points, clusters, names):
 
     # Generate tsne plot
     tsne = TSNE(
@@ -61,29 +62,34 @@ def plot_tsne(m: np.ndarray, points, clusters):
 
     # Plot tsne results
     fig, ax = plt.subplots(
-        frameon=False, figsize=[8, 8], dpi=300, constrained_layout=True
+        frameon=False, figsize=[4.2, 4.2], dpi=300, constrained_layout=True
     )
     ax = beautify_ax(ax)
+    cycol = cycle("bgrcmky")
+    cdict = dict(zip(type_tags, cycol))
+    cb = np.array([cdict[i] for i in clusters])
     for i, indices_list in enumerate(clusters):
         ax.scatter(
             tsne_results[indices_list, 0],
             tsne_results[indices_list, 1],
-            s=30,
+            s=40,
             edgecolors="black",
             zorder=1,
             alpha=0.7,
+            c=cb[i],
             label=f"Cluster {i}",
         )
     for i in points:
         ax.scatter(
             tsne_results[i, 0],
             tsne_results[i, 1],
-            marker="x",
-            s=40,
+            marker="X",
+            s=50,
             linewidths=2,
             edgecolors="black",
             zorder=2,
-            label=f"Cluster {i}",
+            c=cb[i],
+            label=f"{names[i]}",
         )
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
@@ -161,7 +167,7 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
@@ -189,7 +195,7 @@ def affprop_clustering(m, verb=0):
                 f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]:02}"
             )
         closest_pt_idx.append(ap.cluster_centers_indices_[iclust])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 

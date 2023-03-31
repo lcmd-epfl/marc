@@ -458,9 +458,11 @@ class Molecule:
             self.from_file(filename, noh)
         elif lines is not None:
             self.from_lines(lines, noh)
+            self.name = name
         else:
             self.atoms = atoms
             self.coordinates = center_coordinates(coordinates, atoms)
+            self.name = name
             if self.radii is None and self.atoms is not None:
                 self.set_radii()
             else:

@@ -10,6 +10,7 @@ from navicat_marc.clustering import (
     kmeans_clustering,
     plot_dendrogram,
     unique_nm,
+    plot_tsne,
 )
 from navicat_marc.da import da_matrix
 from navicat_marc.distatis import run_distatis
@@ -234,6 +235,9 @@ def run_marc():
             outnames = [f"{basename}_{idx:02}" for idx in range(l)]
         else:
             outnames = [f"{basename}_{idx:04}" for idx in range(l)]
+
+    # Plot tsne
+    plot_tsne(A, indices, clusters, outnames)
 
     # Write the indices (representative molecules) that were accepted and rejected
 
