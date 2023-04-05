@@ -454,8 +454,6 @@ class Molecule:
         self.scale_factor = scale_factor
         self.radii = radii
         self.name = name
-        if self.name is None and self.name != posname:
-            self.name = posname
         if filename is not None:
             self.name = splitext(filename)[0]
             self.from_file(filename, noh)
@@ -490,6 +488,7 @@ class Molecule:
         # The title line may contain an energy
         title = f.readline().strip()
         energy = None
+        posname = None
         if "energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
@@ -509,7 +508,7 @@ class Molecule:
             try:
                 posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
             except Exception:
-                posname = None
+                pass
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
@@ -578,6 +577,7 @@ class Molecule:
         # The title line may contain an energy
         title = next(lines_iter).strip()
         energy = None
+        posname = None
         if "energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
@@ -597,7 +597,7 @@ class Molecule:
             try:
                 posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
             except Exception:
-                posname = None
+                pass
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
