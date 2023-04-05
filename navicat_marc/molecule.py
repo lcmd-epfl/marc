@@ -453,6 +453,9 @@ class Molecule:
     ):
         self.scale_factor = scale_factor
         self.radii = radii
+        self.name = name
+        if self.name is None and self.name != posname:
+            self.name = posname
         if filename is not None:
             self.name = splitext(filename)[0]
             self.from_file(filename, noh)
