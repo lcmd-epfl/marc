@@ -125,6 +125,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
             marker="X",
             label=f"{names[index]}",
         )
+    plt.savefig("tsne_plot.png", bbox_inches="tight")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
     ax.legend(
@@ -132,9 +133,9 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
         bbox_to_anchor=(0.5, -0.05),
         fancybox=True,
         shadow=True,
-        ncol=len(clusters),
+        ncol=min(len(clusters), 10),
     )
-    plt.savefig("tsne_plot.png", bbox_inches="tight")
+    plt.savefig("tsne_plot_legend.png", bbox_inches="tight")
     plt.close()
 
 

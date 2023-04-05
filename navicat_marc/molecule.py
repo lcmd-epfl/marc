@@ -503,6 +503,10 @@ class Molecule:
                 energy = None
             except AttributeError:
                 energy = None
+            try:
+                posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
+            except Exception:
+                posname = None
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
@@ -547,6 +551,8 @@ class Molecule:
             self.atoms = atoms
             self.coordinates = V
         self.energy = energy
+        if self.name is None and self.name != posname:
+            self.name = posname
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()
@@ -585,6 +591,10 @@ class Molecule:
                 energy = None
             except AttributeError:
                 energy = None
+            try:
+                posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
+            except Exception:
+                posname = None
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
@@ -626,6 +636,8 @@ class Molecule:
             self.atoms = atoms
             self.coordinates = V
         self.energy = energy
+        if self.name is None and self.name != posname:
+            self.name = posname
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()
