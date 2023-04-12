@@ -17,7 +17,7 @@ def run_distatis(list_D, verb=0):
     for i, D in enumerate(list_D):
         S = calc_S(D, C)
         U, s, Vt = np.linalg.svd(S, full_matrices=True, hermitian=True)
-        Sn = S / np.max(s)
+        Sn = S / (np.max(s) + np.eps)
         if verb > 4:
             print(f"\n The {i}th normalized cross-product distance matrix is :\n")
             print(np.array_str(Sn, precision=2, suppress_small=True))
@@ -41,7 +41,7 @@ def run_distatis(list_D, verb=0):
     exp_i = np.round(np.max(s) / np.sum(s), 2)
     if verb > 2:
         print(f"The explained inertia given by the compromise method is {exp_i}")
-    alphas = U[0, :] / np.sum(U[0, :])
+    alphas = normalize(U[0, :])
     if verb > 4:
         print(f"The assigned weights are {alphas}")
     Sp = np.zeros_like(list_D[0])
@@ -72,3 +72,10 @@ def calc_C(D):
 
 def calc_S(D, C):
     return -0.5 * C @ D @ C.T
+
+
+def normalize(v):
+    norm = np.linalg.norm(v)
+    if norm < np.eps:
+        return v
+    return v / norm
