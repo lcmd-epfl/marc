@@ -17,7 +17,7 @@ def run_distatis(list_D, verb=0):
     for i, D in enumerate(list_D):
         S = calc_S(D, C)
         U, s, Vt = np.linalg.svd(S, full_matrices=True, hermitian=True)
-        Sn = S / (np.max(s) + np.eps)
+        Sn = S / (np.max(s) + np.finfo(float).eps)
         if verb > 4:
             print(f"\n The {i}th normalized cross-product distance matrix is :\n")
             print(np.array_str(Sn, precision=2, suppress_small=True))
@@ -76,6 +76,6 @@ def calc_S(D, C):
 
 def normalize(v):
     norm = np.linalg.norm(v)
-    if norm < np.eps:
+    if norm < np.finfo(float).eps:
         return v
     return v / norm
