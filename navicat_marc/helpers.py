@@ -226,8 +226,8 @@ def processargs(arguments):
         "--plotmode",
         dest="plotmode",
         type=int,
-        default=1,
-        help="Plotting mode. Set to more than 1 to generate agglomerative dendrograms. (default: 1)",
+        default=0,
+        help="Plotting mode. Set to 1 to generate agglomerative dendrograms and to 2 to also generate TSNE plots. (default: 0)",
     )
     args = mbuilder.parse_args(arguments)
 

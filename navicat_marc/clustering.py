@@ -51,6 +51,10 @@ def beautify_ax(ax):
 
 
 def plot_tsne(m: np.ndarray, points, clusters, names):
+    val = np.min(m)
+    if val < 0:
+        m += -val
+        np.clip(m, 0)
 
     # Generate tsne plot
     tsne = TSNE(

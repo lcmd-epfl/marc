@@ -54,7 +54,7 @@ def run_marc():
     # Generate the desired metric matrix
     if m in ["rmsd", "ewrmsd", "mix"]:
         rmsd_m, rmsd_max = rmsd_matrix(molecules, sort=sort, truesort=truesort)
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(rmsd_m * rmsd_max, "RMSD", verb)
         A = rmsd_m
         if verb > 4:
@@ -74,7 +74,7 @@ def run_marc():
                  energy metrics, mine or ewin. Exiting."""
             )
         erel_m, erel_max = erel_matrix(molecules)
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(erel_m * erel_max, "E_rel", verb)
         A = erel_m
         if verb > 4:
@@ -86,7 +86,7 @@ def run_marc():
 
     if m in ["da", "ewda", "mix"]:
         da_m, da_max = da_matrix(molecules, mode="dfs")
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(da_m * da_max, "Dihedral", verb)
         A = da_m
         if verb > 4:
@@ -233,7 +233,8 @@ def run_marc():
         outnames = [f"{basename}_{idx:{format_string}}" for idx in range(l)]
 
     # Plot tsne
-    plot_tsne(A, indices, clusters, outnames)
+    if plotmode > 1:
+        plot_tsne(A, indices, clusters, outnames)
 
     # Write the indices (representative molecules) that were accepted and rejected
 
