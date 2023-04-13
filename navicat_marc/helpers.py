@@ -109,7 +109,7 @@ def processargs(arguments):
         epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
     mbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 0.1.9"
+        "-version", "--version", action="version", version="%(prog)s 0.1.10"
     )
     mbuilder.add_argument(
         "-i",

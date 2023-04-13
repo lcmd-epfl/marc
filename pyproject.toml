@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "navicat_marc"
-version = "0.1.9"
+version = "0.1.10"
 authors = [
   { name="R. Laplaza", email="rlaplaza@duck.com" },
 ]
