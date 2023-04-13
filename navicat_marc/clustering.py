@@ -54,7 +54,7 @@ def plot_tsne(m: np.ndarray, points, clusters, names):
     val = np.min(m)
     if val < 0:
         m += -val
-        np.clip(m, 0)
+        np.clip(m, a_min=0, a_max=np.max(m))
 
     # Generate tsne plot
     tsne = TSNE(
