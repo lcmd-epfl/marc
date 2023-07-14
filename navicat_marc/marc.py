@@ -9,6 +9,7 @@ from navicat_marc.clustering import (
     agglomerative_clustering,
     kmeans_clustering,
     plot_dendrogram,
+    plot_tsne,
     unique_nm,
 )
 from navicat_marc.da import da_matrix
@@ -53,7 +54,7 @@ def run_marc():
     # Generate the desired metric matrix
     if m in ["rmsd", "ewrmsd", "mix"]:
         rmsd_m, rmsd_max = rmsd_matrix(molecules, sort=sort, truesort=truesort)
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(rmsd_m * rmsd_max, "RMSD", verb)
         A = rmsd_m
         if verb > 4:
@@ -73,7 +74,7 @@ def run_marc():
                  energy metrics, mine or ewin. Exiting."""
             )
         erel_m, erel_max = erel_matrix(molecules)
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(erel_m * erel_max, "E_rel", verb)
         A = erel_m
         if verb > 4:
@@ -85,7 +86,7 @@ def run_marc():
 
     if m in ["da", "ewda", "mix"]:
         da_m, da_max = da_matrix(molecules, mode="dfs")
-        if plotmode > 1:
+        if plotmode > 0:
             plot_dendrogram(da_m * da_max, "Dihedral", verb)
         A = da_m
         if verb > 4:
@@ -125,7 +126,7 @@ def run_marc():
     if c == "affprop":
         indices, clusters = affprop_clustering(A, verb)
 
-    # Make sure no duplicates remain. Sometimes an issue with kmeans and were not filtered before
+    # Make sure no duplicates remain
 
     curr_n = len(indices)
     effA = A[indices, :][:, indices]
@@ -225,14 +226,24 @@ def run_marc():
                     )
                 rejected[i] = 1
 
+    # Output name generation
+    outnames = [molecule.name for molecule in molecules]
+    if None in outnames:
+        format_string = f"0{min(np.floor(l / 10), 1) + 1}"
+        outnames = [f"{basename}_{idx:{format_string}}" for idx in range(l)]
+
+    # Plot tsne
+    if plotmode > 1:
+        plot_tsne(A, indices, clusters, outnames)
+
     # Write the indices (representative molecules) that were accepted and rejected
 
     if ewin is not None:
         for i, idx in enumerate(indices):
             if rejected[i]:
-                molecules[idx].write(f"{basename}_rejected_{idx:02}")
+                molecules[idx].write(f"{outnames[idx]}_rejected")
             if not rejected[i]:
-                molecules[idx].write(f"{basename}_selected_{idx:02}")
+                molecules[idx].write(f"{outnames[idx]}_accepted")
     else:
         for i, idx in enumerate(indices):
-            molecules[idx].write(f"{basename}_selected_{idx:02}")
+            molecules[idx].write(f"{outnames[idx]}_accepted")

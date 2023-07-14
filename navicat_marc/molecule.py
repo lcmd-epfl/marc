@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import re
-from os.path import dirname
+from os.path import dirname, splitext
 
 import networkx as nx
 import numpy as np
@@ -445,6 +445,7 @@ class Molecule:
         coordinates=None,
         energy=None,
         filename=None,
+        name=None,
         lines=None,
         radii=None,
         scale_factor=1.10,
@@ -452,13 +453,17 @@ class Molecule:
     ):
         self.scale_factor = scale_factor
         self.radii = radii
+        self.name = name
         if filename is not None:
+            self.name = splitext(filename)[0]
             self.from_file(filename, noh)
         elif lines is not None:
             self.from_lines(lines, noh)
+            self.name = name
         else:
             self.atoms = atoms
             self.coordinates = center_coordinates(coordinates, atoms)
+            self.name = name
             if self.radii is None and self.atoms is not None:
                 self.set_radii()
             else:
@@ -483,6 +488,7 @@ class Molecule:
         # The title line may contain an energy
         title = f.readline().strip()
         energy = None
+        posname = None
         if "energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
@@ -499,6 +505,10 @@ class Molecule:
                 energy = None
             except AttributeError:
                 energy = None
+            try:
+                posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
+            except Exception:
+                pass
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
@@ -543,6 +553,8 @@ class Molecule:
             self.atoms = atoms
             self.coordinates = V
         self.energy = energy
+        if self.name is None and self.name != posname:
+            self.name = posname
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()
@@ -565,6 +577,7 @@ class Molecule:
         # The title line may contain an energy
         title = next(lines_iter).strip()
         energy = None
+        posname = None
         if "energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
@@ -581,6 +594,10 @@ class Molecule:
                 energy = None
             except AttributeError:
                 energy = None
+            try:
+                posname = title.split(" ")[0].split("/")[-1].split(".")[-1].rstrip()
+            except Exception:
+                pass
         if energy is None:
             try:
                 energy = float(title) * ha_to_kcalmol
@@ -622,6 +639,8 @@ class Molecule:
             self.atoms = atoms
             self.coordinates = V
         self.energy = energy
+        if self.name is None and self.name != posname:
+            self.name = posname
         if self.radii is None and self.atoms is not None:
             self.set_radii()
         self.set_am()

@@ -10,7 +10,7 @@ import numpy as np
 
 from navicat_marc.exceptions import InputError
 from navicat_marc.molecule import Molecule, at_eq, b_eq
-from navicat_marc.rmsd import reorder_hungarian, reorder_distance, kabsch_rmsd
+from navicat_marc.rmsd import kabsch_rmsd, reorder_distance, reorder_hungarian
 
 
 def long_substr(data):
@@ -32,6 +32,7 @@ def long_substr(data):
 
 valid_c = ["kmeans", "agglomerative", "affprop"]
 valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
+
 
 def yesno(question):
     """Simple Yes/No Function."""
@@ -108,7 +109,7 @@ def processargs(arguments):
         epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
     mbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 0.1.8"
+        "-version", "--version", action="version", version="%(prog)s 0.1.10"
     )
     mbuilder.add_argument(
         "-i",
@@ -225,8 +226,8 @@ def processargs(arguments):
         "--plotmode",
         dest="plotmode",
         type=int,
-        default=1,
-        help="Plotting mode. Set to more than 1 to generate agglomerative dendrograms. (default: 1)",
+        default=0,
+        help="Plotting mode. Set to 1 to generate agglomerative dendrograms and to 2 to also generate TSNE plots. (default: 0)",
     )
     args = mbuilder.parse_args(arguments)
 
@@ -318,6 +319,10 @@ def processargs(arguments):
             raise InputError(
                 f"The number of molecules ({len(molecules)}) and energies ({len(energies)}) in file {filename} does not match. Exiting."
             )
+
+    # Check for number of molecules
+    if len(molecules) < 3:
+        raise InputError("Less than three molecules provided. Exiting.")
 
     # Check for atom ordering and number
     sort = False

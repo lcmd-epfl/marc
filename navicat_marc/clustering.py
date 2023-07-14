@@ -5,6 +5,8 @@ import numpy as np
 
 matplotlib.use("Agg")
 
+from itertools import cycle, product
+
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy
 import scipy.cluster.vq
@@ -35,32 +37,109 @@ def plot_dendrogram(m: np.ndarray, label: str, verb=0):
     plt.close()
 
 
-def plot_tsne(m: np.ndarray, points, clusters):
+def beautify_ax(ax):
+    # Border
+    ax.spines["top"].set_color("black")
+    ax.spines["bottom"].set_color("black")
+    ax.spines["left"].set_color("black")
+    ax.spines["right"].set_color("black")
+    ax.get_xaxis().set_tick_params(direction="out")
+    ax.get_yaxis().set_tick_params(direction="out")
+    ax.xaxis.tick_bottom()
+    ax.yaxis.tick_left()
+    return ax
+
+
+def plot_tsne(m: np.ndarray, points, clusters, names):
+    val = np.min(m)
+    if val < 0:
+        m += -val
+        np.clip(m, a_min=0, a_max=np.max(m))
 
     # Generate tsne plot
-    tsne = TSNE(n_components=2, metric="precomputed", init="random", perplexity=min(len(points), 50))
+    tsne = TSNE(
+        n_components=2,
+        metric="precomputed",
+        init="random",
+        early_exaggeration=20.0,
+        perplexity=min(int(len(points) / np.sqrt(len(clusters))), 50),
+    )
     tsne_results = tsne.fit_transform(m)
 
     # Plot tsne results
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(
+        frameon=False,
+        figsize=[4.2, 4.2],
+        dpi=300,
+    )
+    ax = beautify_ax(ax)
+    col = [
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "k",
+        "y",
+        "plum",
+        "gold",
+        "yellowgreen",
+        "teal",
+        "violet",
+        "salmon",
+        "sienna",
+        "silver",
+        "tan",
+        "wheat",
+        "ivory",
+        "darkgreen",
+        "coral",
+        "darkblue",
+        "orange",
+        "olive",
+        "lightgreen",
+        "lightblue",
+        "aquamarine",
+        "orchid",
+    ]
+    mar = ["o", "v", "^", "s", "p", "h", "P", "D", "*", ">", "<"]
+    cy_col_mar = cycle(product(mar, col))
+    cmdict = dict(zip(points, cy_col_mar))
+    cmb = np.array([cmdict[i] for i in points])
     for i, indices_list in enumerate(clusters):
         ax.scatter(
             tsne_results[indices_list, 0],
             tsne_results[indices_list, 1],
+            s=50,
+            edgecolors="black",
+            zorder=1,
+            alpha=0.75,
+            c=cmb[i][1],
+            marker=cmb[i][0],
             label=f"Cluster {i}",
-            alpha=0.7,
         )
-    for i in points:
+    for i, index in enumerate(points):
         ax.scatter(
-            tsne_results[i, 0],
-            tsne_results[i, 1],
-            marker="x",
-            s=200,
-            linewidths=3,
-            label=f"Cluster {i}",
+            tsne_results[index, 0],
+            tsne_results[index, 1],
+            s=30,
+            edgecolors="black",
+            zorder=2,
+            c=cmb[i][1],
+            marker="X",
+            label=f"{names[index]}",
         )
-    ax.legend()
-    plt.savefig("tsne_plot.png")
+    plt.savefig("tsne_plot.png", bbox_inches="tight")
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.05),
+        fancybox=True,
+        shadow=True,
+        ncol=min(len(clusters), 10),
+    )
+    plt.savefig("tsne_plot_legend.png", bbox_inches="tight")
     plt.close()
 
 
@@ -127,7 +206,7 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
@@ -155,7 +234,7 @@ def affprop_clustering(m, verb=0):
                 f"Point in {iclust} center has index {ap.cluster_centers_indices_[iclust]:02}"
             )
         closest_pt_idx.append(ap.cluster_centers_indices_[iclust])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
@@ -187,7 +266,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
         n_clusters = min(n_unique, n_clusters)
     m = np.ones_like(m) - m
     ac = AgglomerativeClustering(
-        n_clusters=n_clusters, affinity="precomputed", linkage="single"
+        n_clusters=n_clusters, metric="precomputed", linkage="single"
     )
     cm = ac.fit_predict(m)
     clf = NearestCentroid()
@@ -218,7 +297,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
                 f"Closest index of point to cluster {iclust} center has index {cluster_pts_indices[min_idx]:02}"
             )
         closest_pt_idx.append(cluster_pts_indices[min_idx])
-    plot_tsne(m, closest_pt_idx, clusters)
+    # plot_tsne(m, closest_pt_idx, clusters)
     return closest_pt_idx, clusters
 
 
