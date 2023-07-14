@@ -101,7 +101,7 @@ def run_marc():
         A = run_distatis([erel_m, rmsd_m], verb)
 
     if m == "ewda":
-        A = run_distatis([da_m, rmsd_m], verb)
+        A = run_distatis([erel_m, da_m], verb)
 
     if m == "mix":
         A = run_distatis([da_m, erel_m, rmsd_m], verb)
