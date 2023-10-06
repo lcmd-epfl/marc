@@ -58,7 +58,7 @@ def run_marc():
             print(f"An energy window of {ewin} kcal/mol will be applied.")
 
     # Generate the desired metric matrix
-    if m in ["rmsd", "ewrmsd", "mix"]:
+    if m in ["rmsd", "ewrmsd", "mix", "avg"]:
         rmsd_m, rmsd_max = rmsd_matrix(molecules, sort=sort, truesort=truesort)
         if plotmode > 0:
             plot_dendrogram(rmsd_m * rmsd_max, "RMSD", verb)
@@ -70,7 +70,7 @@ def run_marc():
                 f"Before normalization, largest dissimilarity was {rmsd_max} angstrom."
             )
 
-    if m in ["erel", "ewrmsd", "ewda", "mix"] or (ewin is not None) or mine:
+    if m in ["erel", "ewrmsd", "ewda", "mix", "avg"] or (ewin is not None) or mine:
         if None in energies:
             if verb > 2:
                 print(f"Energies are: {energies}")
@@ -89,7 +89,7 @@ def run_marc():
                 f"Before normalization, largest dissimilarity was {erel_max} kcal/mol."
             )
 
-    if m in ["da", "ewda", "mix"]:
+    if m in ["da", "ewda", "mix", "avg"]:
         da_m, da_max = da_matrix(molecules, mode="dfs")
         if plotmode > 0:
             plot_dendrogram(da_m * da_max, "Dihedral", verb)
@@ -111,6 +111,9 @@ def run_marc():
 
     if m == "mix":
         A = run_distatis([da_m, erel_m, rmsd_m], verb)
+
+    if m == "avg":
+        A = (erel_m + da_m + rmsd_m) / 3
 
     if verb > 3:
         print("\n The current dissimilarity matrix is :\n")

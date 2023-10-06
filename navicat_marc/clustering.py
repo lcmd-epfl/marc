@@ -14,6 +14,7 @@ from scipy.spatial.distance import euclidean, squareform
 from sklearn.cluster import DBSCAN, AffinityPropagation, AgglomerativeClustering, KMeans
 from sklearn.manifold import MDS, TSNE
 from sklearn.neighbors import NearestCentroid
+from sklearn.metrics import silhouette_score
 
 from navicat_marc.exceptions import UniqueError
 
@@ -147,8 +148,10 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
     mds = MDS(
         dissimilarity="precomputed",
         n_components=rank,
-        n_init=100,
+        n_init=1,
+        max_iter=500,
         normalized_stress="auto",
+        random_state=42,
     )
     x = mds.fit_transform(m)
 
@@ -178,8 +181,9 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             id_gap = gap(x, nrefs=min(nm, 5), ks=percentages, verb=verb)
             n_clusters = percentages[id_gap]
         n_unique, rank = unique_nr(m, verb=verb)
-        n_clusters = min(n_unique, n_clusters)
-    km = KMeans(n_clusters=n_clusters, n_init=100)
+        n_clusters = int(min(n_unique, n_clusters))
+    centroids = naive_sharding(x, n_clusters)
+    km = KMeans(n_clusters=n_clusters, n_init=1, init=centroids)
     cm = km.fit_predict(x)
     u, c = np.unique(cm, return_counts=True)
     closest_pt_idx = []
@@ -241,7 +245,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
         mds = MDS(
             dissimilarity="precomputed",
             n_components=rank,
-            n_init=100,
+            n_init=10,
             normalized_stress="auto",
         )
         x = mds.fit_transform(m)
@@ -262,9 +266,13 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             n_clusters = percentages[id_gap]
         n_unique, rank = unique_nr(m, verb=verb)
         n_clusters = min(n_unique, n_clusters)
+    if n_clusters < 2:
+        raise UniqueError(
+            "Agglomerative clustering requires at least 2 clusters. Currently it seems like your data only has 1 cluster, either by mistake or by request."
+        )
     m = np.ones_like(m) - m
     ac = AgglomerativeClustering(
-        n_clusters=n_clusters, metric="precomputed", linkage="single"
+        n_clusters=n_clusters, metric="precomputed", linkage="complete"
     )
     cm = ac.fit_predict(m)
     clf = NearestCentroid()
@@ -298,7 +306,7 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
     return closest_pt_idx, clusters
 
 
-def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
+def finder(data, refs=None, nrefs=10, ks=range(1, 11), choice="silhouette", verb=0):
     shape = data.shape
     if refs is None:
         tops = data.max(axis=0)
@@ -311,48 +319,139 @@ def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
         rands = refs
     gaps = np.zeros((len(ks),))
     s = np.zeros((len(ks),))
+    sc = np.zeros((len(ks),))
+    bick = np.zeros((len(ks),))
     diff = np.zeros((len(ks) - 1,))
     for i, k in enumerate(ks):
-        km = KMeans(n_clusters=k, n_init=5)
+        centroids = naive_sharding(data, n_clusters=k)
+        km = KMeans(n_clusters=k, n_init=1, init=centroids)
         _ = km.fit_predict(data)
         kmc = km.cluster_centers_
         kml = km.labels_
-        disp = sum([euclidean(data[m, :], kmc[kml[m], :]) for m in range(shape[0])])
-        refdisps = np.zeros((rands.shape[2],))
-        for j in range(rands.shape[2]):
-            km = KMeans(n_clusters=k, n_init=5)
-            _ = km.fit_predict(rands[:, :, j])
-            kmc = km.cluster_centers_
-            kml = km.labels_
-            refdisps[j] = sum(
-                [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
-            )
-        l = np.mean(scipy.log(refdisps))
-        rld = np.log(disp)
-        gaps[i] = l - rld
-        sdk = np.sqrt(np.mean((np.log(refdisps) - rld) ** 2.0))
-        s[i] = np.sqrt(1.0 + 1.0 / rands.shape[2]) * sdk
-        if verb > 5:
-            print(f"Gaps for k-values {ks[i]} : {gaps[i]}")
-    for i in range(len(ks) - 1):
-        diff[i] = gaps[i] - gaps[i + 1] + s[i + 1]
-        if verb > 4:
+
+        # Calculate silhouette score while at it
+        if choice == "silhouette":
+            sc[i] = sc_score(data, kml, metric="euclidean")
+
+        if choice == "bic":
+            # Also test subdivision for X-means style clustering
+            M = np.size(data, axis=1)
+            p = M + 1
+            obic = np.zeros(k)
+            nbic = np.zeros(k)
+            for l in range(k):
+                rn = np.size(np.where(kml == l))
+                var = max(
+                    np.sum((data[kml == l] - kmc[l]) ** 2) / max(float(rn - 1), 1), 1e-6
+                )
+                obic[l] = loglikelihood(rn, rn, var, M, 1) - p / 2.0 * np.log(rn)
+
+            for l in range(k):
+                sk = 2  # in principle we try to split clusters in 2
+                ci = data[kml == l]
+                if ci.shape[0] != 1:
+                    r = np.size(np.where(kml == l))
+                    centroids = naive_sharding(ci, n_clusters=sk)
+                    km = KMeans(n_clusters=sk, n_init=1, init=centroids)
+                    _ = km.fit_predict(ci)
+                    cic = km.cluster_centers_
+                    cil = km.labels_
+                    for n in range(sk):
+                        rn = np.size(np.where(cil == n))
+                        var = max(
+                            np.sum((ci[cil == n] - cic[n]) ** 2)
+                            / max(float(rn - sk), 1),
+                            1e-6,
+                        )
+                        nbic[l] += loglikelihood(r, rn, var, M, sk)
+                else:
+                    sk = 1
+                    r = np.size(np.where(kml == l))
+                    centroids = naive_sharding(ci, n_clusters=sk)
+                    km = KMeans(n_clusters=sk, n_init=1, init=centroids)
+                    _ = km.fit_predict(ci)
+                    cic = km.cluster_centers_
+                    cil = km.labels_
+                    for n in range(sk):
+                        rn = np.size(np.where(cil == n))
+                        var = max(
+                            np.sum((ci[cil == n] - cic[n]) ** 2)
+                            / max(float(rn - sk), 1),
+                            1e-6,
+                        )
+                        nbic[l] += loglikelihood(r, rn, var, M, sk)
+                p = sk * (M + 1)
+                nbic[l] -= p / 2.0 * np.log(rn)
+
+            bicdiff = obic - nbic  # If obic > nbic then k is good
+            bick[i] = (bicdiff > 0).sum()
+            # if any(obic < nbic) : # If not, a cluster can probably be split
+            #    continue
+
+        if choice == "gap":
+            # Continue with gap statistic
+            disp = sum([euclidean(data[m, :], kmc[kml[m], :]) for m in range(shape[0])])
+            refdisps = np.zeros((rands.shape[2],))
+            for j in range(rands.shape[2]):
+                centroids = naive_sharding(rands[:, :, j], n_clusters=k)
+                km = KMeans(n_clusters=k, n_init=1)
+                _ = km.fit_predict(rands[:, :, j])
+                kmc = km.cluster_centers_
+                kml = km.labels_
+                refdisps[j] = sum(
+                    [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
+                )
+            l = np.mean(scipy.log(refdisps))
+            rld = np.log(disp)
+            gaps[i] = l - rld
+            sdk = np.sqrt(np.mean((np.log(refdisps) - rld) ** 2.0))
+            s[i] = np.sqrt(1.0 + 1.0 / rands.shape[2]) * sdk
+            if verb > 5:
+                print(
+                    f"Gaps and silhouette scores for k-values {ks[i]} : {np.around(gaps[i],2)} {np.around(sc[i],2)}"
+                )
+    if choice == "gap":
+        for i in range(len(ks) - 1):
+            diff[i] = gaps[i] - gaps[i + 1] + s[i + 1]
+            if verb > 4:
+                print(
+                    f"Gap(i) vs. Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} + {s[i+1]} =  {diff[i]}"
+                )
+        if verb > 2:
             print(
-                f"Gap(i) vs. Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} + {s[i+1]} =  {diff[i]}"
+                f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks[:len(ks)-1]} : {np.round(diff,2)}"
             )
-    if verb > 3:
-        print(f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks[:len(ks)-1]} : {diff}")
-    return diff
+    if choice == "silhouette" and verb > 2:
+        print(f"Silhouette score  for k-values {ks} : {np.round(sc,2)}")
+    if choice == "bic" and verb > 2:
+        print(f"Positive BIC-per-cluster count for k-values {ks} : {bick}")
+    return diff, sc, bick
 
 
-def gap(data, refs=None, nrefs=5, ks=range(1, 11), verb=0):
-    diff = gaps_diff(data, refs, nrefs, ks, verb)
-    best = np.argmax(diff > 0)
-    if best == 0:
-        print(
-            "The number of clusters according to the gap statistic is 1! Your structures and energies all must be very similar!"
-        )
+def gap(data, refs=None, nrefs=5, ks=range(1, 11), choice="silhouette", verb=0):
+    diff, sc, bick = finder(data, refs, nrefs, ks, choice, verb)
+
+    if choice == "gap":
+        best = np.argmax(diff > 0)
+        if best == 0:
+            print(
+                "The number of clusters according to the gap statistic is 1! Your structures and energies all must be very similar!"
+            )
+
+    if choice == "silhouette":
+        best = np.argmax(sc) - 1
+
+    if choice == "bic":
+        best = np.argmin(bick == 0)
+
     return best
+
+
+def sc_score(m, labels, metric="precomputed"):
+    if all(labels == 0):
+        return 0
+    else:
+        return silhouette_score(m, labels, metric=metric)
 
 
 def unique_nr(data, verb=0):
@@ -384,3 +483,60 @@ def unique_nm(data, verb=0):
             f"{n} unique entries detected in dissimilarity matrix of selected conformers."
         )
     return n, umask
+
+
+def naive_sharding(ds, n_clusters):
+    """
+    Create cluster centroids using deterministic naive sharding algorithm.
+
+    Parameters
+    ----------
+    ds : numpy array
+        The dataset to be used for centroid initialization.
+    n_clusters : int
+        The desired number of clusters for which centroids are required.
+    Returns
+    -------
+    centroids : numpy array
+        Collection of k centroids as a numpy array.
+    """
+    k = n_clusters
+    n = np.shape(ds)[1]
+    m = np.shape(ds)[0]
+    if (k == 1 or n == 1) and m > 1:
+        return ds[np.random.randint(0, m - 1)].reshape(1, -1)
+    if m < 1:
+        return ds[0].reshape(1, -1)
+
+    def _get_mean(sums, step):
+        """Vectorizable ufunc for getting means of summed shard columns."""
+        return sums / step
+
+    centroids = np.zeros((k, n))
+
+    composite = np.mat(np.sum(ds, axis=1))
+    ds = np.append(composite.T, ds, axis=1)
+    ds.sort(axis=0)
+
+    step = max(int(np.floor(m / k)), 1)
+    # print(f"Step is set to {m} / {k} = {step} ")
+    vfunc = np.vectorize(_get_mean)
+
+    for j in range(k):
+        if j == k - 1:
+            centroids[j:] = vfunc(np.sum(ds[j * step :, 1:], axis=0), step)
+        else:
+            centroids[j:] = vfunc(
+                np.sum(ds[j * step : (j + 1) * step, 1:], axis=0), step
+            )
+
+    return centroids
+
+
+def loglikelihood(r, rn, var, m, k):
+    l1 = -rn / 2.0 * np.log(2 * np.pi)
+    l2 = -rn * m / 2.0 * np.log(var)
+    l3 = -(rn - k) / 2.0
+    l4 = rn * np.log(rn)
+    l5 = -rn * np.log(r)
+    return l1 + l2 + l3 + l4 + l5

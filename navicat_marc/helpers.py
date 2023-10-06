@@ -31,7 +31,7 @@ def long_substr(data):
 
 
 valid_c = ["kmeans", "agglomerative", "affprop"]
-valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix"]
+valid_m = ["rmsd", "erel", "da", "ewrmsd", "ewda", "mix", "avg"]
 
 
 def yesno(question):
@@ -138,8 +138,8 @@ def processargs(arguments):
         "--metric",
         dest="m",
         type=str,
-        default="mix",
-        help=f"Metric to use to define distance. (default: mix)\nPossible values are: {valid_m}",
+        default="avg",
+        help=f"Metric to use to define distance. (default: avg)\nPossible values are: {valid_m}",
     )
     mbuilder.add_argument(
         "-n",
@@ -191,6 +191,14 @@ def processargs(arguments):
         help="If set, will attempt to sort molecular geometries within isomorphisms w.r.t. the first structure. This can be time consuming. (default: False)",
     )
     mbuilder.add_argument(
+        "-nosymm",
+        "--nosymm",
+        dest="nosymm",
+        action="store_true",
+        default=False,
+        help="If set, will avoid sorting molecular geometries within isomorphisms unless its requested explicitly with the allsort/sort flags. (default: False)",
+    )
+    mbuilder.add_argument(
         "-as",
         "--as",
         "-allsort",
@@ -200,7 +208,7 @@ def processargs(arguments):
         dest="allsort",
         action="store_true",
         default=False,
-        help="If set, will attempt to sort molecular geometries within isomorphisms in every pairwise comparison. This is extremely time consuming. (default: False)",
+        help="If set, will attempt to sort molecular geometries within isomorphisms in every pairwise comparison. This is extremely time consuming in large molecules. (default: False, True if molecule is small)",
     )
     mbuilder.add_argument(
         "-efile",
@@ -429,6 +437,13 @@ def processargs(arguments):
         if args.verb > 0:
             print(
                 "Warning! All pairs isomorphism-based sorting is remarkably expensive. This option is available for cases in which the input structures are isomorphically shuffled.\n This may take a ridiculous amount of time, as all isomorphisms must be checked, so you may want to explore other options or use a metric that does not require RMSDs."
+            )
+        truesort = True
+        sort = True
+    elif natoms < 50 and not args.nosymm:
+        if args.verb > 0:
+            print(
+                "Activating symmetry-aware isomorphic sorting because the system is small. This can be avoided using the nosymm flag."
             )
         truesort = True
         sort = True

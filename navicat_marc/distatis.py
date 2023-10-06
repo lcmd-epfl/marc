@@ -47,6 +47,8 @@ def run_distatis(list_D, verb=0):
     Sp = np.zeros_like(list_D[0])
     for alpha, Sn in zip(alphas, list_Sn):
         Sp -= alpha * Sn
+    # For sanity
+    np.fill_diagonal(Sp, 0)
     return Sp
 
 
