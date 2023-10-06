@@ -102,7 +102,6 @@ def molecules_from_file(filename, scale_factor=1.10, noh=True):
 
 
 def processargs(arguments):
-
     mbuilder = argparse.ArgumentParser(
         prog="navicat_marc",
         description="Analyse conformer ensembles to find the most representative structures.",

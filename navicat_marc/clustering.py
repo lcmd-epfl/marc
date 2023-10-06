@@ -189,7 +189,6 @@ def kmeans_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
-
         # get all points assigned to each cluster:
         clusters.append(np.where(km.labels_ == iclust)[0])
 
@@ -222,7 +221,6 @@ def affprop_clustering(m, verb=0):
             f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
-
         # get all points assigned to each cluster:
         cluster_pts = m[ap.labels_ == iclust]
         clusters.append(np.where(ap.labels_ == iclust)[0])
@@ -279,7 +277,6 @@ def agglomerative_clustering(n_clusters, m: np.ndarray, rank=5, verb=0):
             f"{u[-1]+1} unique clusters found: {u} \nWith counts: {c} \nAdding up to {np.sum(c)}"
         )
     for iclust in range(u.size):
-
         # get all points assigned to each cluster:
         cluster_pts = m[ac.labels_ == iclust]
         clusters.append(np.where(ac.labels_ == iclust)[0])
@@ -315,7 +312,7 @@ def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
     gaps = np.zeros((len(ks),))
     s = np.zeros((len(ks),))
     diff = np.zeros((len(ks) - 1,))
-    for (i, k) in enumerate(ks):
+    for i, k in enumerate(ks):
         km = KMeans(n_clusters=k, n_init=5)
         _ = km.fit_predict(data)
         kmc = km.cluster_centers_

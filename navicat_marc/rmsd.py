@@ -403,7 +403,6 @@ def reorder_distance(
     view_reorder = np.zeros(q_atoms.shape, dtype=int)
 
     for atom in unique_atoms:
-
         (p_atom_idx,) = np.where(p_atoms == atom)
         (q_atom_idx,) = np.where(q_atoms == atom)
 

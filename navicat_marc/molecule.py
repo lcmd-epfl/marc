@@ -500,7 +500,7 @@ class Molecule:
         if "Energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
-                energy = float(etitle) * ha_to_kcalmol
+                energy = float(etitle)  # * ha_to_kcalmol
             except ValueError:
                 energy = None
             except AttributeError:
@@ -527,7 +527,6 @@ class Molecule:
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(f):
-
             if lines_read == n_atoms:
                 break
 
@@ -597,7 +596,7 @@ class Molecule:
         if "Energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
-                energy = float(etitle) * ha_to_kcalmol
+                energy = float(etitle)  # * ha_to_kcalmol
             except ValueError:
                 energy = None
             except AttributeError:
@@ -624,7 +623,6 @@ class Molecule:
 
         # Use the number of atoms to not read beyond the end of a file
         for lines_read, line in enumerate(lines_iter):
-
             if lines_read == n_atoms:
                 break
 
