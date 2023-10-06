@@ -48,6 +48,7 @@ def run_marc():
             print(
                 f"marc has detected {l} molecules in input.\n Will automatically select a set of representative conformers using {c} clustering and {m} as metric."
             )
+        energies = [molecule.energy for molecule in molecules]
         if not None in energies:
             print(
                 f"Energies for each conformer have been provided.\n mine will be set to True."
@@ -70,7 +71,6 @@ def run_marc():
             )
 
     if m in ["erel", "ewrmsd", "ewda", "mix"] or (ewin is not None) or mine:
-        energies = [molecule.energy for molecule in molecules]
         if None in energies:
             if verb > 2:
                 print(f"Energies are: {energies}")
@@ -186,7 +186,6 @@ def run_marc():
 
     if ewin is not None:
         rejected = np.zeros((len(indices)))
-        energies = [molecule.energy for molecule in molecules]
         if None in energies:
             if verb > 2:
                 print(f"Energies are: {energies}")
