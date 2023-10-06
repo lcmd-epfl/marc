@@ -432,7 +432,7 @@ def gap(data, refs=None, nrefs=5, ks=range(1, 11), choice="silhouette", verb=0):
     diff, sc, bick = finder(data, refs, nrefs, ks, choice, verb)
 
     if choice == "gap":
-        best = np.argmax(diff > 0)
+        best = np.argmax(diff > 0) - 1
         if best == 0:
             print(
                 "The number of clusters according to the gap statistic is 1! Your structures and energies all must be very similar!"
@@ -440,6 +440,10 @@ def gap(data, refs=None, nrefs=5, ks=range(1, 11), choice="silhouette", verb=0):
 
     if choice == "silhouette":
         best = np.argmax(sc) - 1
+        if best == 0:
+            print(
+                "The number of clusters according to the gap statistic is 1! Your structures and energies all must be very similar!"
+            )
 
     if choice == "bic":
         best = np.argmin(bick == 0)
