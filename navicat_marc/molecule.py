@@ -497,6 +497,14 @@ class Molecule:
                 energy = None
             except AttributeError:
                 energy = None
+        if "Energy:" in title and energy is None:
+            try:
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
         if "Eopt" in title and energy is None:
             try:
                 etitle = title.split("Eopt")[-1].rstrip()
@@ -579,6 +587,14 @@ class Molecule:
         energy = None
         posname = None
         if "energy:" in title and energy is None:
+            try:
+                etitle = title.split(":")[1].split(" ")[1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
+        if "Energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
                 energy = float(etitle) * ha_to_kcalmol
