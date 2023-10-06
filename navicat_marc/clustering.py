@@ -335,19 +335,22 @@ def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
         if verb > 5:
             print(f"Gaps for k-values {ks[i]} : {gaps[i]}")
     for i in range(len(ks) - 1):
-        diff[i] = gaps[i] - gaps[i + 1] + s[i + 1]
+        diff[i] = gaps[i] - gaps[i + 1] - s[i + 1]
         if verb > 4:
             print(
                 f"Gap(i) - Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} - {s[i+1]} =  {diff[i]}"
             )
     if verb > 3:
-        print(f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks} : {diff}")
+        print(f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks[:len(ks)-1]} : {diff}")
     return diff
 
 
 def gap(data, refs=None, nrefs=5, ks=range(1, 11), verb=0):
     diff = gaps_diff(data, refs, nrefs, ks, verb)
-    return np.argmax(diff)
+    best = np.argmax(diff > 0.5)
+    if best == 0:
+        best = np.argmax(diff)
+    return best
 
 
 def unique_nr(data, verb=0):
