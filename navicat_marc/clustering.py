@@ -347,7 +347,7 @@ def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
 
 def gap(data, refs=None, nrefs=5, ks=range(1, 11), verb=0):
     diff = gaps_diff(data, refs, nrefs, ks, verb)
-    best = np.argmax(diff > 0.5)
+    best = np.argmax(diff > np.eps)
     if best == 0:
         best = np.argmax(diff)
     return best
