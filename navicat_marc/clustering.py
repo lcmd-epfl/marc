@@ -349,7 +349,9 @@ def gap(data, refs=None, nrefs=5, ks=range(1, 11), verb=0):
     diff = gaps_diff(data, refs, nrefs, ks, verb)
     best = np.argmax(diff > 0)
     if best == 0:
-        best = np.argmax(diff)
+        print(
+            "The number of clusters according to the gap statistic is 1! Your structures and energies all must be very similar!"
+        )
     return best
 
 
