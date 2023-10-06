@@ -335,10 +335,10 @@ def gaps_diff(data, refs=None, nrefs=10, ks=range(1, 11), verb=0):
         if verb > 5:
             print(f"Gaps for k-values {ks[i]} : {gaps[i]}")
     for i in range(len(ks) - 1):
-        diff[i] = gaps[i] - gaps[i + 1] - s[i + 1]
+        diff[i] = gaps[i] - gaps[i + 1] + s[i + 1]
         if verb > 4:
             print(
-                f"Gap(i) - Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} - {s[i+1]} =  {diff[i]}"
+                f"Gap(i) vs. Gap(i+1) - sk(i+1) for k-value {ks[i]} : {gaps[i]} - {gaps[i+1]} + {s[i+1]} =  {diff[i]}"
             )
     if verb > 3:
         print(f"Gap(i) - Gap(i+1) = sk(i+1)  for k-values {ks[:len(ks)-1]} : {diff}")
