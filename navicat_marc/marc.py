@@ -48,6 +48,11 @@ def run_marc():
             print(
                 f"marc has detected {l} molecules in input.\n Will automatically select a set of representative conformers using {c} clustering and {m} as metric."
             )
+        if not None in energies:
+            print(
+                f"Energies for each conformer have been provided.\n mine will be set to True."
+            )
+            mine = True
         if ewin is not None:
             print(f"An energy window of {ewin} kcal/mol will be applied.")
 

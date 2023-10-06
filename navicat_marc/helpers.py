@@ -170,7 +170,7 @@ def processargs(arguments):
         dest="mine",
         action="store_true",
         default=False,
-        help="If set, the minimum energy conformer per sample will be taken instead of the centermost one. (default: False)",
+        help="If set, the minimum energy conformer per sample will be taken instead of the centermost one. (default: False, True if energies available)",
     )
     mbuilder.add_argument(
         "-yesh",
