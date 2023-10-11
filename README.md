@@ -33,12 +33,12 @@ pip install navicat_marc
 Afterwards, you can call marc as:
 
 ```python 
-python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-nosymm] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 or simply
 
 ```python 
-navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-nosymm] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
 ```
 
 Alternatively, you can download the package and execute:
@@ -47,15 +47,10 @@ Alternatively, you can download the package and execute:
 python setup.py install
 ```
 
-Afterwards, you can call marc as:
-
-```python 
-python -m navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
-```
 or
 
 ```python 
-navicat_marc [-h] [-version] -i INPUT [INPUT ...] [-c C] [-m M] [-n N] [-ewin EWIN] [-sf SF] [-mine] [-yesh] [-s] [-as] [-efile EFILE] [-v VERB] [-pm PLOTMODE]
+pip install .
 ```
 
 Options can be consulted using the `-h` flag in either case. The help menu is quite detailed. 
@@ -66,15 +61,17 @@ Note that the main functions are all exposed and called directly in sequential o
 
 Several strategies are available for the generation of conformational ensembles. Typically, one then needs to sort the ensemble and proceed with the study of the most energetically favored conformers, which will be the most accesible thermodynamically following a Boltzmann distribution.
 
-However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Hence, marc provides a convenient way of accomplishing three goals:
+However, sorting conformers accurately requires high quality energy computations. Accurately determining the energy of every structure may be too computationally demanding. Furthermore, upon refinement many conformers may collapse to the same stationary point. Even worse, for some tasks, knowledge of conformer interconvertibility is highly important.
 
-- Select a handful of conformers that are representative of the diversity of the conformational ensemble using combined metrics.
+To untangle these issues, marc provides a convenient way of accomplishing three goals:
+
+- Select a handful of distinct conformers that are representative of the diversity of the conformational ensemble using combined metrics.
 - Apply energy cutoffs based on the available energies to remove entire clusters from the space using the `-ewin` flag and inputting a treshold in kcal/mol.
 - Proceed iteratively, helping the user select non-redundant conformers than can then be refined with a higher level and fed back to marc.
 
-The default clustering metric used in marc is the `"mix"` distance, which measures pairwise similarity based on heavy-atom rmsd times the energy difference times the kernel of the heavy-atom dihedral angles of the system. 
+The default clustering metric used in marc is the `"avg"` distance, which measures pairwise similarity based on the average of three normalized distance matrices: heavy-atom rmsd, energy difference and kernel of the heavy-atom dihedral angles of the system. 
 
-The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy, while the dihedral metric smooths systems that only differ by a few torsions. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy).  
+The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy, while the dihedral metric smooths systems that only differ by a few torsions. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy with the DISTATIS algorithm), other than the default `avg`..  
 
 ## Examples [↑](#examples)
 
@@ -94,7 +91,9 @@ The output of marc are `n` selected xyz files which will be called `INPUT_select
 
 High verbosity levels (`-v 1`, `-v 2`, etc.) will print significantly more information while marc runs. To be as automated as possible, reasonable default values are set for most choices, but extreme verbosity can be obtained by raising the value.
 
-As a final note, marc does not consider hydrogen atoms for geometry analysis. You can force marc to include them by using the `yesh` flag.
+marc is able to use molecular symmetry and deal with shuffling, including the effect of bond rotations and symmetries, when computing heavy atom rmsdS. However, this comes at a cost, and therefore this function is deactivated automatically for large systems. You can enfoce sorting by including the flags `-s` and `-as`, where `s` uses an approximate sorting routine and `as` does brute force rmsd comparisons over isomorphisms. `nosymm` deactivates this functionality, which can lead to wrong rmsds! Luckily, you can always resort to metrics that do not require rmsd.
+
+As a final note, marc does not consider hydrogen atoms for geometry analysis. You can force marc to include them by using the `-yesh` flag, which is generally not recommended. Obviously, including hydrogens makes any sorting much more time consuming.
 
 ## Citation [↑](#citation)
 
