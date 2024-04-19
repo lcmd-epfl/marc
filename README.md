@@ -71,7 +71,7 @@ To untangle these issues, marc provides a convenient way of accomplishing three 
 
 The default clustering metric used in marc is the `"avg"` distance, which measures pairwise similarity based on the average of three normalized distance matrices: heavy-atom rmsd, energy difference and kernel of the heavy-atom dihedral angles of the system. 
 
-The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy, while the dihedral metric smooths systems that only differ by a few torsions. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy with the DISTATIS algorithm), other than the default `avg`..  
+The logic behind this choice is that rmsd ought to be good except in cases where trivial single bond rotations increase the rmsd without affecting the energy, while the dihedral metric smooths systems that only differ by a few torsions. The possible metrics (to be fed to the `-m` flag) are `"rmsd"`, `"erel"` (based on the available energies), `"da"` (based on the most relevant dihedral angle of the molecule), `"ewrmsd"` (combining geometry and energy) and `"mix"` (combining geometry, dihedrals and energy with the DISTATIS algorithm), other than the default `avg`.
 
 ## Examples [↑](#examples)
 
@@ -91,7 +91,7 @@ The output of marc are `n` selected xyz files which will be called `INPUT_select
 
 High verbosity levels (`-v 1`, `-v 2`, etc.) will print significantly more information while marc runs. To be as automated as possible, reasonable default values are set for most choices, but extreme verbosity can be obtained by raising the value.
 
-marc is able to use molecular symmetry and deal with shuffling, including the effect of bond rotations and symmetries, when computing heavy atom rmsdS. However, this comes at a cost, and therefore this function is deactivated automatically for large systems. You can enfoce sorting by including the flags `-s` and `-as`, where `s` uses an approximate sorting routine and `as` does brute force rmsd comparisons over isomorphisms. `nosymm` deactivates this functionality, which can lead to wrong rmsds! Luckily, you can always resort to metrics that do not require rmsd.
+marc is able to use molecular symmetry and deal with shuffling, including the effect of bond rotations and symmetries, when computing heavy atom rmsd. However, this comes at a cost, and therefore this function is deactivated automatically for large systems. You can enfoce sorting by including the flags `-s` and `-as`, where `s` uses an approximate sorting routine and `as` does brute force rmsd comparisons over isomorphisms. `nosymm` deactivates this functionality, which can lead to wrong rmsds! Luckily, you can always resort to metrics that do not require rmsd.
 
 As a final note, marc does not consider hydrogen atoms for geometry analysis. You can force marc to include them by using the `-yesh` flag, which is generally not recommended. Obviously, including hydrogens makes any sorting much more time consuming.
 
