@@ -489,6 +489,14 @@ class Molecule:
         title = f.readline().strip()
         energy = None
         posname = None
+        if "scf done:" in title and energy is None:
+            try:
+                etitle = title.replace(" ", "").split(":")[1].rstrip()
+                energy = float(etitle) * ha_to_kcalmol
+            except ValueError:
+                energy = None
+            except AttributeError:
+                energy = None
         if "energy:" in title and energy is None:
             try:
                 etitle = title.split(":")[1].split(" ")[1].rstrip()
