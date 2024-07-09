@@ -3,6 +3,7 @@
 import argparse
 import glob
 import re
+import sys
 from itertools import cycle
 
 import networkx as nx
@@ -102,13 +103,16 @@ def molecules_from_file(filename, scale_factor=1.10, noh=True):
 
 
 def processargs(arguments):
+    input_list = sys.argv
+    input_str = " ".join(input_list)
+    version_str = "0.2.0"
     mbuilder = argparse.ArgumentParser(
         prog="navicat_marc",
         description="Analyse conformer ensembles to find the most representative structures.",
         epilog="Remember to cite the marc paper or repository - \n if they have a DOI by now\n - and enjoy!",
     )
     mbuilder.add_argument(
-        "-version", "--version", action="version", version="%(prog)s 0.1.10"
+        "-version", "--version", action="version", version=f"%(prog)s {version_str}"
     )
     mbuilder.add_argument(
         "-i",
@@ -211,6 +215,15 @@ def processargs(arguments):
         help="If set, will attempt to sort molecular geometries within isomorphisms in every pairwise comparison. This is extremely time consuming in large molecules. (default: False, True if molecule is small)",
     )
     mbuilder.add_argument(
+        "-o",
+        "-output",
+        "--o",
+        "--output",
+        dest="output_filename",
+        default=None,
+        help="If set to a filename, filename of the output file that will log marc's standard output. (default: None)",
+    )
+    mbuilder.add_argument(
         "-efile",
         "--efile",
         dest="efile",
@@ -238,6 +251,17 @@ def processargs(arguments):
     )
     args = mbuilder.parse_args(arguments)
 
+    if args.output_filename is not None:
+        if not isinstance(args.output_filename, str) or re.search(
+            r"[^A-Za-z0-9_\-\\]", args.output_filename
+        ):
+            raise InputError(
+                f"The provided output filename {args.output_filename} is invalid!"
+            )
+        orig_stdout = sys.stdout
+        ofile = open(args.output_filename, "w")
+        sys.stdout = ofile
+    print(f"Executing marc version {version_str} with input arguments:\n{input_str}")
     input_list = [item for sublist in args.input for item in sublist]
     if args.verb > 2:
         print(f"Input files are {input_list}.")

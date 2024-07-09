@@ -709,17 +709,20 @@ class Molecule:
     def write(self, rootname="output"):
         filename = f"{rootname}.xyz"
         f = open(filename, "w+")
-        print(f"{len(self.atoms_with_h)}", file=f)
-        if self.energy is not None:
-            printable_energy = np.round(self.energy * kcalmol_to_ha, decimals=6)
-            print(f"{printable_energy}", file=f)
-        else:
-            print(f"{self.title}", file=f)
-        for i, atom in enumerate(self.atoms_with_h):
-            print(
-                f"{number_to_symbol[atom]:2}    {np.round(self.coordinates_with_h[i][0],decimals=6): }    {np.round(self.coordinates_with_h[i][1],decimals=6): }    {np.round(self.coordinates_with_h[i][2],decimals=6): }",
-                file=f,
-            )
+        with np.printoptions(
+            suppress=True, precision=6, formatter={"float_kind": "{:0.6f}".format}
+        ):
+            print(f"{len(self.atoms_with_h)}", file=f)
+            if self.energy is not None:
+                printable_energy = np.round(self.energy * kcalmol_to_ha, decimals=6)
+                print(f"{printable_energy}", file=f)
+            else:
+                print(f"{self.title}", file=f)
+            for i, atom in enumerate(self.atoms_with_h):
+                print(
+                    f"{number_to_symbol[atom]:2}    {np.round(self.coordinates_with_h[i][0],decimals=6): }    {np.round(self.coordinates_with_h[i][1],decimals=6): }    {np.round(self.coordinates_with_h[i][2],decimals=6): }",
+                    file=f,
+                )
         f.close()
 
     def update(self, atoms, coordinates):
