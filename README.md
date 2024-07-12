@@ -79,7 +79,7 @@ The logic behind this choice is that rmsd ought to be good except in cases where
 The examples subdirectory contains some examples obtained by running [CREST](https://xtb-docs.readthedocs.io/en/latest/crest.html). Any of the xyz files can be run as:
 
 ```python
-navicar_marc -i [FILENAME]
+navicat_marc -i [FILENAME]
 ```
 
 Options can be consulted with the `-h` flag.
