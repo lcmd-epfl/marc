@@ -3,6 +3,7 @@
 import sys
 
 import numpy as np
+import scipy
 
 from navicat_marc.clustering import (
     affprop_clustering,
@@ -150,7 +151,13 @@ def run_marc():
 
     n, umask = unique_nm(effA, verb)
     if n < curr_n:
-        print(f"Reduced the number of selected conformers by {curr_n - n}.")
+        print(
+            f"Reduced the number of selected conformers by {curr_n - n} due to uniqueness."
+        )
+        if n < n_clusters:
+            raise InputError(
+                """The desired number of clusters is larger than the number of unique entries according to the chosen similarity matrix. Exiting."""
+            )
         indices = list(np.array(indices, dtype=int)[umask])
         clusters = list(np.array(clusters, dtype=object)[umask])
 
