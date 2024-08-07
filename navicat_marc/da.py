@@ -31,23 +31,42 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
     if natoms > 4:
         n_d = max(natoms // 4, 1)
     else:
-        return M
+        return M.np.max(M)
     DA = np.zeros((n, n_d))
     coords = np.array([mol.coordinates for mol in mols])
 
     # All molecules share the same connectivity (at least in principle)
     # Lets traverse the graph and collect dihedrals
-    if mode == "auto":
-        bc = nx.betweenness_centrality(refgraph, endpoints=True, weight="coulomb_term")
-        all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
-        for i in range(n):
-            for d in range(n_d - 1):
-                k = 4 * d
-                l = 4 * (d + 1)
-                a0, a1, a2, a3 = coords[i][all_indices[k:l]]
-                DA[i, d] = dihedral(a0, a1, a2, a3)
-    elif mode == "dfs":
-        dfs_nodes = list(nx.dfs_preorder_nodes(refgraph, source=0))
+    if nx.is_connected(refgraph):
+        if mode == "auto":
+            bc = nx.betweenness_centrality(
+                refgraph, endpoints=True, weight="coulomb_term"
+            )
+            all_indices = sorted(range(len(bc)), key=lambda i: bc[i])[::-1]
+            for i in range(n):
+                for d in range(n_d - 1):
+                    k = 4 * d
+                    l = 4 * (d + 1)
+                    a0, a1, a2, a3 = coords[i][all_indices[k:l]]
+                    DA[i, d] = dihedral(a0, a1, a2, a3)
+        elif mode == "dfs":
+            dfs_nodes = list(nx.dfs_preorder_nodes(refgraph, source=0))
+            n_d = max(len(dfs_nodes) // 4, 1)
+            for i in range(n):
+                for d in range(n_d - 1):
+                    k = 4 * d
+                    l = 4 * (d + 1)
+                    a0, a1, a2, a3 = coords[i][dfs_nodes[k:l]]
+                    DA[i, d] = dihedral(a0, a1, a2, a3)
+        else:
+            return M, np.max(M)
+    else:
+        # If graph is disconnected we default to dfs for each component
+        dfs_nodes = []
+        for cc in nx.connected_components(refgraph):
+            dfs_nodes.extend(
+                list(nx.dfs_preorder_nodes(refgraph.subgraph(cc), source=min(cc)))
+            )
         n_d = max(len(dfs_nodes) // 4, 1)
         for i in range(n):
             for d in range(n_d - 1):
@@ -55,11 +74,13 @@ def da_matrix(mols, normalize=True, kernel="rbf", mode="dfs"):
                 l = 4 * (d + 1)
                 a0, a1, a2, a3 = coords[i][dfs_nodes[k:l]]
                 DA[i, d] = dihedral(a0, a1, a2, a3)
-    else:
-        return M
     # Now generate a kernel based on the dihedrals
     if kernel == "rbf":
         euclid_0 = np.linalg.norm(DA[:, :] - DA[0, :], axis=0)
+        # In some cases DA may be ill conditioned leading to euclid_0 of 0
+        # The second option may be better and might end up replacing the one above
+        if euclid_0.std() == 0:
+            gamma_heuristic = 1 / (n_d * DA.var())
         gamma_heuristic = 1 / (euclid_0.std())
         M -= pairwise_kernels(DA, DA, gamma=gamma_heuristic, metric="rbf")
     else:
