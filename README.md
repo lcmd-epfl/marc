@@ -98,7 +98,7 @@ As a final note, marc does not consider hydrogen atoms for geometry analysis. Yo
 
 ## Citation [↑](#citation)
 
-Please cite our work with the repository DOI and the manuscript that introduced the code. You can find it [here](https://rdcu.be/cT7uu) and in the reference:
+Please cite our work with the repository DOI and the manuscript that introduced the code. You can find it [here](https://doi.org/10.1021/acs.jpclett.4c01657) and in the reference:
 
 ```
 Laplaza, R.; Wodrich, M. D.; Corminboeuf, C. Overcoming the Pitfalls of Computing Reaction Selectivity from Ensembles of Transition States. J. Phys. Chem. Lett. 2024, 15 (29), 7363–7370. https://doi.org/10.1021/acs.jpclett.4c01657.
