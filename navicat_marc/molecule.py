@@ -507,7 +507,7 @@ class Molecule:
                 energy = None
         if "Energy:" in title and energy is None:
             try:
-                etitle = title.split(":")[1].split(" ")[1].rstrip()
+                etitle = title.split(":")[1].strip()
                 energy = float(etitle)  # * ha_to_kcalmol
             except ValueError:
                 energy = None

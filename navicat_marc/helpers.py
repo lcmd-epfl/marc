@@ -105,7 +105,7 @@ def molecules_from_file(filename, scale_factor=1.10, noh=True):
 def processargs(arguments):
     input_list = sys.argv
     input_str = " ".join(input_list)
-    version_str = "0.2.2"
+    version_str = "0.2.3"
     mbuilder = argparse.ArgumentParser(
         prog="navicat_marc",
         description="Analyse conformer ensembles to find the most representative structures.",
