@@ -50,9 +50,16 @@ def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
                         save_rotated_coordinates = rotated_coordinates
                     if np.isclose(0, min_res):
                         break
-                pos_ibj.append(save_ibj)
-                assert all(mols[i].atoms == mols[j].atoms[save_ibj])
-                mols[j].update(mols[j].atoms[save_ibj], save_rotated_coordinates)
+                if len(iviews) == 0:
+                    min_res, save_rotated_coordinates = kabsch_rmsd(
+                        mols[i].coordinates, mols[j].coordinates
+                    )
+                    assert all(mols[i].atoms == mols[j].atoms)
+                    mols[j].update(mols[j].atoms, save_rotated_coordinates)
+                else:
+                    pos_ibj.append(save_ibj)
+                    assert all(mols[i].atoms == mols[j].atoms[save_ibj])
+                    mols[j].update(mols[j].atoms[save_ibj], save_rotated_coordinates)
                 M[i, j] = M[j, i] = min_res
             if not sort and len(pos_ibj) > 0:
                 for k, ibj in enumerate(pos_ibj):
@@ -78,6 +85,7 @@ def rmsd_matrix(mols, sort=False, truesort=False, normalize=True):
         if not truesort:
             sort = False
     maxval = np.max(M)
+    max_idxs = np.unravel_index(M.argmax(), M.shape)
     if normalize:
         M = np.abs(M) / maxval
     return M, maxval
