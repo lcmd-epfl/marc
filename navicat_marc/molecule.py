@@ -10,7 +10,7 @@ import scipy.spatial
 from navicat_marc.exceptions import InputError
 
 ha_to_kcalmol = 627.509474
-kcalmol_to_ha = 0.00159360
+kcalmol_to_ha = 0.00159360143
 
 symbol_to_number = {
     "Em": 0,  # empty site
