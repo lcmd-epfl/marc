@@ -2,6 +2,9 @@
 .vscode/
 .idea/
 
+# Data 
+Conformer_Datasets/
+
 # Vagrant
 .vagrant/
 
@@ -123,3 +126,4 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+test_marc.py

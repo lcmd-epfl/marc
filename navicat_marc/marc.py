@@ -21,6 +21,8 @@ from navicat_marc.helpers import processargs
 from navicat_marc.molecule import Molecule
 from navicat_marc.rmsd import rmsd_matrix
 
+from navicat_marc import helpers
+
 def run_marc():
     (
         basename,
@@ -35,15 +37,29 @@ def run_marc():
         truesort,
         plotmode,
         verb,
+        is_write
     ) = processargs(sys.argv[1:])
 
-    run_marc_from_args()
+    indices, clusters = run_marc_from_args(basename = basename, 
+                                           molecules = molecules, 
+                                           dof = dof, 
+                                           c = c, 
+                                           m = m, 
+                                           n_clusters = n_clusters,
+                                           ewin = ewin,
+                                           mine = mine,
+                                           sort = sort,
+                                           truesort = truesort,
+                                           plotmode = plotmode,
+                                           verb = verb,
+                                           is_write = is_write
+                                           )
 
     return
 
 def run_marc_from_args(basename, 
                        molecules, 
-                       dof, 
+                       dof: int = None, 
                        c: str = 'kmeans', 
                        m:str = 'avg', 
                        n_clusters: int = None, 
@@ -68,6 +84,8 @@ def run_marc_from_args(basename,
 
             dof: (Optional) Integer
                 Default: None
+                Degrees of freedom.
+                If not specified, calculated from the given molecules.
 
             c: (Optional) String
                 Default: kmeans
@@ -114,11 +132,19 @@ def run_marc_from_args(basename,
 
         Returns:
         --------
-            indx_rep: List
+            indices: List
+                Indices of the representative molecule in a cluster.
+                Correlates to cluster with the same index.
 
-            clusters:
+            clusters: List of lists
+                Clustered conformer ensembles.
+                Representative molecule has same index in indices list.
 
     """
+    if dof == None: # If degrees of freedom is not specified, then calculate.
+        dof, _ = helpers.get_dof(molecules, verb = verb)
+
+
     # Fill in molecule data
     l = len(molecules)
     energies = [molecule.energy for molecule in molecules]  # Retrieve the energy from every molecule in the list if applicable.
@@ -379,3 +405,5 @@ def run_marc_from_args(basename,
         else:
             for i, idx in enumerate(indices):
                 molecules[idx].write(f"{outnames[idx]}_accepted")
+
+    return indices, clusters
