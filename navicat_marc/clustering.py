@@ -311,10 +311,11 @@ def finder(data, refs=None, nrefs=10, ks=range(1, 11), choice="silhouette", verb
     if refs is None:
         tops = data.max(axis=0)
         bots = data.min(axis=0)
-        dists = scipy.matrix(scipy.diag(tops - bots))
+        dists = np.diag((tops - bots))
+        # dists = scipy.matrix(scipy.diag(tops - bots))
         rands = np.random.random_sample(size=(shape[0], shape[1], nrefs))
         for i in range(nrefs):
-            rands[:, :, i] = rands[:, :, i] * dists + bots
+            rands[:, :, i] = rands[:, :, i]@ dists + bots
     else:
         rands = refs
     gaps = np.zeros((len(ks),))
@@ -518,7 +519,7 @@ def naive_sharding(ds, n_clusters):
 
     centroids = np.zeros((k, n))
 
-    composite = np.mat(np.sum(ds, axis=1))
+    composite = np.asmatrix(np.sum(ds, axis=1))
     ds = np.append(composite.T, ds, axis=1)
     ds.sort(axis=0)
 

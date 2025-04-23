@@ -105,7 +105,7 @@ def molecules_from_file(filename, scale_factor=1.10, noh=True):
 def processargs(arguments):
     input_list = sys.argv
     input_str = " ".join(input_list)
-    version_str = "0.2.4"
+    version_str = "0.2.5"
     mbuilder = argparse.ArgumentParser(
         prog="navicat_marc",
         description="Analyse conformer ensembles to find the most representative structures.",
@@ -249,6 +249,16 @@ def processargs(arguments):
         default=0,
         help="Plotting mode. Set to 1 to generate agglomerative dendrograms and to 2 to also generate TSNE plots. (default: 0)",
     )
+    mbuilder.add_argument(
+        "-w",
+        "--w",
+        "-write",
+        "--write",
+        dest="write",
+        action="store_false",
+        default=True,
+        help="If set, will alter file names in directory with accepted and rejected representations. (default: False)"
+    )
     args = mbuilder.parse_args(arguments)
 
     if args.output_filename is not None:
@@ -356,59 +366,10 @@ def processargs(arguments):
         raise InputError("Less than three molecules provided. Exiting.")
 
     # Check for atom ordering and number
+    dof, natoms = get_dof(molecules, verb = args.verb)
+
     sort = False
-    for molecule_a, molecule_b in zip(molecules, molecules[1:]):
-        atoms_a = molecule_a.atoms_with_h
-        atoms_b = molecule_b.atoms_with_h
-        if len(atoms_a) == len(atoms_b):
-            if not all(atoms_a == atoms_b):
-                if args.verb > 4:
-                    print(
-                        "Attempting reordering and updating molecular geometries because atom lists were not identical."
-                    )
-                dview = reorder_distance(
-                    atoms_a,
-                    atoms_b,
-                    molecule_a.coordinates_with_h,
-                    molecule_b.coordinates_with_h,
-                )
-                dres, _ = kabsch_rmsd(
-                    molecule_a.coordinates_with_h, molecule_b.coordinates_with_h[dview]
-                )
-                if args.verb > 4:
-                    print(f"After distance reordering, RMSD is {dres}.")
-                hview = reorder_hungarian(
-                    atoms_a,
-                    atoms_b[dview],
-                    molecule_a.coordinates_with_h,
-                    molecule_b.coordinates_with_h[dview],
-                )
-                hres, _ = kabsch_rmsd(
-                    molecule_a.coordinates_with_h,
-                    molecule_b.coordinates_with_h[dview][hview],
-                )
-                if args.verb > 4:
-                    print(f"After hungarian reordering on top of it, RMSD is {hres}.")
-                if hres < dres:
-                    molecule_b.update_with_h(
-                        atoms_b[dview][hview],
-                        molecule_b.coordinates_with_h[dview][hview],
-                    )
-                else:
-                    molecule_b.update_with_h(
-                        atoms_b[dview], molecule_b.coordinates_with_h[dview]
-                    )
-        else:
-            raise InputError("Molecules do not have the same number of atoms. Exiting.")
-        natoms = len(atoms_b)
-        if natoms == 1:
-            raise InputError("Molecules are monoatomic. Exiting.")
-        elif natoms == 2:
-            dof = 1
-        else:
-            dof = 3 * len(atoms_b) - 6
-        if not dof > 0:
-            raise InputError("Molecules have less than 1 degree of freedom. Exiting.")
+
     if args.verb > 0 and sort:
         print(
             "Warning! The given molecule geometries were not sorted. Molecules have been reordered to try to fix this.\n This does not guarantee that the RMSDs will be properly calculated! If your input structures are completely shuffled, all calculated RMSD-based metrics might be bad."
@@ -496,6 +457,7 @@ def processargs(arguments):
         truesort,
         args.plotmode,
         args.verb,
+        args.write
     )
 
 
@@ -508,3 +470,100 @@ def test_molecules_from_file(path="navicat_marc/test_files/"):
         for molecule in molecules:
             print(molecule.energy, molecule.coordinates, molecule.atoms)
             assert molecule.energy is not None
+
+
+# ------------------------------------------------------------------------------------------------------------------- # 
+
+def get_dof(molecules, verb = 1):
+    """
+        Get the degrees of freedom for a list of molecules.
+        Based on code obtained from the older marc version.
+
+        Args:
+        -----
+            molecules: List of Molecule objects.
+
+            verb: Integer
+                Verbosity level of the code.
+
+        Returns:
+        -------
+            dof: Integer
+    """
+
+        # Check for atom ordering and number
+    sort = False
+    for molecule_a, molecule_b in zip(molecules, molecules[1:]):
+        atoms_a = molecule_a.atoms_with_h
+        atoms_b = molecule_b.atoms_with_h
+        if len(atoms_a) == len(atoms_b):
+            if not all(atoms_a == atoms_b):
+                if verb > 4:
+                    print(
+                        "Attempting reordering and updating molecular geometries because atom lists were not identical."
+                    )
+                dview = reorder_distance(
+                    atoms_a,
+                    atoms_b,
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h,
+                )
+                dres, _ = kabsch_rmsd(
+                    molecule_a.coordinates_with_h, molecule_b.coordinates_with_h[dview]
+                )
+                if verb > 4:
+                    print(f"After distance reordering, RMSD is {dres}.")
+                hview = reorder_hungarian(
+                    atoms_a,
+                    atoms_b[dview],
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h[dview],
+                )
+                hres, _ = kabsch_rmsd(
+                    molecule_a.coordinates_with_h,
+                    molecule_b.coordinates_with_h[dview][hview],
+                )
+                if verb > 4:
+                    print(f"After hungarian reordering on top of it, RMSD is {hres}.")
+                if hres < dres:
+                    molecule_b.update_with_h(
+                        atoms_b[dview][hview],
+                        molecule_b.coordinates_with_h[dview][hview],
+                    )
+                else:
+                    molecule_b.update_with_h(
+                        atoms_b[dview], molecule_b.coordinates_with_h[dview]
+                    )
+        else:
+            raise InputError("Molecules do not have the same number of atoms. Exiting.")
+        natoms = len(atoms_b)
+        if natoms == 1:
+            raise InputError("Molecules are monoatomic. Exiting.")
+        elif natoms == 2:
+            dof = 1
+        else:
+            dof = 3 * len(atoms_b) - 6
+        if not dof > 0:
+            raise InputError("Molecules have less than 1 degree of freedom. Exiting.")
+
+    return dof, natoms
+
+# ------------------------------------------------------------------------------------------------------------------- # 
+
+def get_basename(list_files):
+    """
+        Get the basename for a list of xyz files used to create the Molecule objects.
+
+        Args:
+        -----
+            list_files: List of filenames.
+
+        Returns:
+        -------
+            basename: String
+    """
+    basename = long_substr([filename.split("/")[-1] for filename in list_files])
+
+    return basename
+
+# ------------------------------------------------------------------------------------------------------------------- # 

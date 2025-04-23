@@ -21,6 +21,7 @@ from navicat_marc.helpers import processargs
 from navicat_marc.molecule import Molecule
 from navicat_marc.rmsd import rmsd_matrix
 
+from navicat_marc import helpers
 
 def run_marc():
     (
@@ -36,10 +37,118 @@ def run_marc():
         truesort,
         plotmode,
         verb,
+        is_write
     ) = processargs(sys.argv[1:])
+
+    indices, clusters = run_marc_from_args(basename = basename, 
+                                           molecules = molecules, 
+                                           dof = dof, 
+                                           c = c, 
+                                           m = m, 
+                                           n_clusters = n_clusters,
+                                           ewin = ewin,
+                                           mine = mine,
+                                           sort = sort,
+                                           truesort = truesort,
+                                           plotmode = plotmode,
+                                           verb = verb,
+                                           is_write = is_write
+                                           )
+
+    return
+
+def run_marc_from_args(basename, 
+                       molecules, 
+                       dof: int = None, 
+                       c: str = 'kmeans', 
+                       m:str = 'avg', 
+                       n_clusters: int = None, 
+                       ewin: float = None, 
+                       mine: bool = False, 
+                       sort: bool = False, 
+                       truesort: bool = False, 
+                       plotmode: int = 0, 
+                       verb: int = 1,
+                       is_write: bool = False
+                       ):
+    """
+        Clusters conformer data into conformer ensembles. 
+        Details are found in the github folder: https://github.com/lcmd-epfl/marc
+        and the paper: https://doi.org/10.1021/acs.jpclett.4c01657
+
+        Args:
+        -----
+            basename: 
+
+            molecules:
+
+            dof: (Optional) Integer
+                Default: None
+                Degrees of freedom.
+                If not specified, calculated from the given molecules.
+
+            c: (Optional) String
+                Default: kmeans
+                Clustering algorithm used.
+                Options: kmeans, agglomerative, affprop
+
+            m: (Optional) String
+                Default: avg
+                Metric used to define distance between clusters.
+                Options: rmsd, erel, da, ewrmsd, ewda, mix, avg
+
+            n_clusters: (Optional) Integer
+                Default: None
+                Number of representatitive conformers to select. Gap method is used by default.
+
+            ewin: (Optional) Float
+                Default: None
+                Energy window for the conformers to be accepted in kcal/mol.
+
+            mine: (Optional) Boolean
+                Default: False
+                If set, the minimum energy conformer per sample will be taken instead of the centermost one.
+                True if energies are available for all conformers.
+
+            sort: (Optional) Boolean
+                Default: False
+                If True, will atempt to sort molecular geometries within isomorphisms w.r.t. the first structure.
+                Time consuming.
+
+            truesort: (Optional) Boolean
+                Default: False
+
+            plotmode: (Optional) Integer
+                Default: 0
+                Set to 1 to generate agglomerative dendrograms and to 2 to also generate TSNE plots.
+
+            verb: (Optional) Integer
+                Default: 1 
+                Verbosity level of the code, Higher is more verbose and vice versa.
+
+            is_write: (Optional) Boolean
+                Default: False
+                Indicates if the run should change filenames of the used files.
+
+        Returns:
+        --------
+            indices: List
+                Indices of the representative molecule in a cluster.
+                Correlates to cluster with the same index.
+
+            clusters: List of lists
+                Clustered conformer ensembles.
+                Representative molecule has same index in indices list.
+
+    """
+    if dof == None: # If degrees of freedom is not specified, then calculate.
+        dof, _ = helpers.get_dof(molecules, verb = verb)
+
 
     # Fill in molecule data
     l = len(molecules)
+    energies = [molecule.energy for molecule in molecules]  # Retrieve the energy from every molecule in the list if applicable.
+
     if verb > 0:
         if n_clusters is not None:
             print(
@@ -49,16 +158,23 @@ def run_marc():
             print(
                 f"marc has detected {l} molecules in input.\n Will automatically select a set of representative conformers using {c} clustering and {m} as metric."
             )
-        energies = [molecule.energy for molecule in molecules]
+        
         if not None in energies:
             print(
                 f"Energies for each conformer have been provided.\n mine will be set to True."
             )
-            mine = True
+            # mine = True
         if ewin is not None:
             print(f"An energy window of {ewin} kcal/mol will be applied.")
 
+    # ------------------------------------------------------------------------------------------ # 
     # Generate the desired metric matrix
+    # ---------------------------------- #
+
+    # ---------------------------------- #
+    # RMSD matrix 
+    # ---------------------------------- # 
+
     if m in ["rmsd", "ewrmsd", "mix", "avg"]:
         rmsd_m, rmsd_max = rmsd_matrix(molecules, sort=sort, truesort=truesort)
         if plotmode > 0:
@@ -70,6 +186,10 @@ def run_marc():
             print(
                 f"Before normalization, largest dissimilarity was {rmsd_max} angstrom."
             )
+
+    # ---------------------------------- #
+    # Relative energy matrix 
+    # ---------------------------------- # 
 
     if m in ["erel", "ewrmsd", "ewda", "mix", "avg"] or (ewin is not None) or mine:
         if None in energies:
@@ -90,6 +210,10 @@ def run_marc():
                 f"Before normalization, largest dissimilarity was {erel_max} kcal/mol."
             )
 
+    # ---------------------------------- #
+    # Dihedral angles 
+    # ---------------------------------- # 
+
     if m in ["da", "ewda", "mix", "avg"]:
         da_m, da_max = da_matrix(molecules, mode="dfs")
         if plotmode > 0:
@@ -102,7 +226,9 @@ def run_marc():
                 f"Before normalization, largest dissimilarity was {da_max} adimensional units (kernel of dihedral angle vectors)."
             )
 
+    # ---------------------------------- #
     # Mix the metric matrices if desired
+    # ---------------------------------- # 
 
     if m == "ewrmsd":
         A = run_distatis([erel_m, rmsd_m], verb)
@@ -124,7 +250,9 @@ def run_marc():
         )
         np.save("dm.npy", A)
 
-    # Time to cluster using the dissimilarity matrix of choice
+    # ------------------------------------------------------------------------------------------ # 
+    # Cluster using the dissimilarity matrix of choice
+    # ------------------------------------------------ # 
 
     if c == "kmeans":
         indices, clusters = kmeans_clustering(n_clusters, A, dof, verb)
@@ -135,7 +263,9 @@ def run_marc():
     if c == "affprop":
         indices, clusters = affprop_clustering(A, verb)
 
-    # Make sure no duplicates remain
+    # ------------------------------------------------ # 
+    # Removal of duplicates.
+    # ------------------------------------------------ # 
 
     curr_n = len(indices)
     effA = A[indices, :][:, indices]
@@ -161,7 +291,9 @@ def run_marc():
         indices = list(np.array(indices, dtype=int)[umask])
         clusters = list(np.array(clusters, dtype=object)[umask])
 
+    # ------------------------------------------------ # 
     # Resample clusters based on energies if requested
+    # ------------------------------------------------ # 
 
     if mine:
         if None in energies:
@@ -192,7 +324,10 @@ def run_marc():
                     )
                 indices[i] = idx_mine
 
-    # If requested, prune again based on average cluster energies
+    # ------------------------------------------------ # 
+    # If requested, prune again based on average 
+    # cluster energies
+    # ------------------------------------------------ # 
 
     if ewin is not None:
         rejected = np.zeros((len(indices)))
@@ -240,24 +375,35 @@ def run_marc():
                     )
                 rejected[i] = 1
 
+    # ------------------------------------------------------------------------------------------ # 
     # Output name generation
+    # ------------------------ # 
+
     outnames = [molecule.name for molecule in molecules]
     if None in outnames:
         format_string = f"0{max(int(np.floor(np.log10(l)) + 1), 2)}d"
         outnames = [f"{basename}_{idx:{format_string}}" for idx in range(l)]
 
+    # ------------------------ #
     # Plot tsne
+    # ------------------------ #
+
     if plotmode > 1:
         plot_tsne(A, indices, clusters, outnames)
 
+    # ------------------------ #
     # Write the indices (representative molecules) that were accepted and rejected
+    # ------------------------ #
 
-    if ewin is not None:
-        for i, idx in enumerate(indices):
-            if rejected[i]:
-                molecules[idx].write(f"{outnames[idx]}_rejected")
-            if not rejected[i]:
+    if is_write:
+        if ewin is not None:
+            for i, idx in enumerate(indices):
+                if rejected[i]:
+                    molecules[idx].write(f"{outnames[idx]}_rejected")
+                if not rejected[i]:
+                    molecules[idx].write(f"{outnames[idx]}_accepted")
+        else:
+            for i, idx in enumerate(indices):
                 molecules[idx].write(f"{outnames[idx]}_accepted")
-    else:
-        for i, idx in enumerate(indices):
-            molecules[idx].write(f"{outnames[idx]}_accepted")
+
+    return indices, clusters
