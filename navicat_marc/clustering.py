@@ -519,7 +519,7 @@ def naive_sharding(ds, n_clusters):
 
     centroids = np.zeros((k, n))
 
-    composite = np.array(np.sum(ds, axis=1)).reshape(-1, 1)
+    composite = np.array(np.sum(ds, axis=1)).reshape(1, -1)
     ds = np.append(composite.T, ds, axis=1)
     ds.sort(axis=0)
 
