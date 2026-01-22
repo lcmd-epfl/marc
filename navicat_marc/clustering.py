@@ -402,7 +402,7 @@ def finder(data, refs=None, nrefs=10, ks=range(1, 11), choice="silhouette", verb
                 refdisps[j] = sum(
                     [euclidean(rands[m, :, j], kmc[kml[m], :]) for m in range(shape[0])]
                 )
-            l = np.mean(scipy.log(refdisps))
+            l = np.mean(np.log(refdisps))
             rld = np.log(disp)
             gaps[i] = l - rld
             sdk = np.sqrt(np.mean((np.log(refdisps) - rld) ** 2.0))
@@ -519,7 +519,7 @@ def naive_sharding(ds, n_clusters):
 
     centroids = np.zeros((k, n))
 
-    composite = np.asmatrix(np.sum(ds, axis=1))
+    composite = np.array(np.sum(ds, axis=1)).reshape(-1, 1)
     ds = np.append(composite.T, ds, axis=1)
     ds.sort(axis=0)
 
