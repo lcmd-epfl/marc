@@ -677,9 +677,7 @@ class Molecule:
         am = np.zeros((n, n), dtype=float)
         row, col = np.triu_indices(n, 1)
         dm = scipy.spatial.distance.pdist(self.coordinates)
-        rm = self.scale_factor * scipy.spatial.distance.pdist(
-            self.radii.reshape(-1, 1), metric=lambda x, y: x + y
-        )
+        rm = self.scale_factor * (self.radii[row] + self.radii[col])
         am[row, col] = am[col, row] = dm - rm
         self.am = am < 0
 
